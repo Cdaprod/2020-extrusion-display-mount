@@ -1,5 +1,5 @@
 {
-  "release": "V008",
+  "release": "V009",
   "units": "mm",
   "rail_reference_length_mm": 120,
   "rail_nominal_size_mm": 20,
@@ -44,7 +44,7 @@
   "display_side_window_length_mm": 48,
   "rear_access_tool_diameter_mm": 4.2,
   "nominal_display_reference_thickness_mm": 5,
-  "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured.",
+  "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured. V009 corrects through-thickness port relief notches that crossed the M3 screw centerlines; retain a continuous central rail spine and integrated screw-bearing pads, with rear-open counterbores.",
   "require_perpendicular_display": true,
   "require_display_centering": true,
   "arm_outer_rear_shoulder_y_mm": 16,
@@ -96,7 +96,7 @@
     "side": "left",
     "station_mm": 44,
     "length_mm": 12,
-    "inner_cut_width_mm": 11,
+    "inner_cut_width_mm": 4,
     "overhang_mm": 1.5
   },
   "usb_relief": {
@@ -104,7 +104,7 @@
     "side": "right",
     "station_mm": 44,
     "length_mm": 16,
-    "inner_cut_width_mm": 11,
+    "inner_cut_width_mm": 4,
     "overhang_mm": 1.5
   },
   "support_arm_center_spacing_mm": 78,

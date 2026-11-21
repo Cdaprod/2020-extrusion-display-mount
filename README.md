@@ -1,4 +1,4 @@
-# 2020 Extrusion-Mounted Touch Display — Parametric V008
+# 2020 Extrusion-Mounted Touch Display — Parametric V009
 
 **Actual CadQuery BREP solids, STEP assemblies, STL component exports and CAD-derived previews.**
 
@@ -6,7 +6,7 @@ This is a *provisional engineering prototype*, based on the user's original tabl
 
 **There are no claimed measurements of the real touchscreen, PCB hole pitch, stand angle or physical rail fit.** Those values are editable initial candidates in [`config/mount_spec.json`](config/mount_spec.json). Do not print and install this on a running printer without measuring and validating those interfaces.
 
-## V008 — centered upright carrier and curved, slot-keyed mount
+## V009 — centered upright carrier and curved, slot-keyed mount
 
 - **Display carrier vertical (90°)** to the saddle's inner horizontal bearing face, not V001's provisional 46° inclination.
 - **Centered**: the carrier's lower/front Y datum, rail section center, and saddle centerline share **Y = 0 mm**; all three are also centered across X.
@@ -16,7 +16,7 @@ This is a *provisional engineering prototype*, based on the user's original tabl
 
 The orthogonal and centering acceptance gates can be relaxed explicitly for a future revised configuration by setting `require_perpendicular_display` or `require_display_centering` to `false`. They remain enabled for this release. [Engineering datum explanation](docs/V002_ALIGNMENT.md).
 
-## V008 — curved Freeform-matched support and T-slot indexing
+## V009 — curved Freeform-matched support and T-slot indexing
 
 The V002 hard triangle has been replaced by **two sculpted parametric arms** with rounded top shoulder, swept upper diagonal, rear transition, tapered lower leg, curved bottom corners, sloping front toe, and tall vertical rounded obround access window. These are real CadQuery BREP arcs and cuts, not a picture or faceted trace.
 
@@ -24,37 +24,41 @@ The saddle remains centered beneath the screen with its inside horizontal bearin
 
 The PCB's four M3 candidate fasteners and rear screwdriver corridors are preserved. Display/stand dimensions are **provisional** until caliper measurements are provided. See [V003 profile contract](docs/V003_PROFILE.md).
 
-## V008 — tangent-continuous compact profile
+## V009 — tangent-continuous compact profile
 
 The side-arm's front foot now starts at the saddle's actual front Y datum (minus half the 42 mm saddle width). There is **no projecting rounded toe**. The rear lower foot is shortened and the rear transition is narrowed. Three mathematically constructed circular fillets connect the top shoulder, rear turn and lower rear foot to neighboring straight lines with **G1 tangency**; the circles are defined by exact tangent offsets, not approximated by arbitrary three-point arcs. The front-to-saddle foot junction is a flush shared edge, not a cosmetic unsupported overhang. All dimensions remain provisional pending physical measurements.
 
 The rail's original STEP, 90° centered carrier, locating T-slot key, M4 keeper, and rear-accessible M3 board fasteners are unchanged.
 
-## V008 — lower rear gusset and profiled service opening
+## V009 — lower rear gusset and profiled service opening
 
 The lower rear overhang is no longer an unsupported horizontal shelf: each side arm has a structural triangular gusset extending downward from the rear saddle wall into the rearward support foot. The gusset is fused into the arm and overlaps the saddle wall without entering the 2020 rail or removable keeper. Its depth and overlap are controlled by `arm_gusset_saddle_overlap_mm` and `arm_gusset_bottom_relief_mm`.
 
 The side service opening is a **rounded trapezoid**, replacing the oversized rear-shifted vertical capsule. Its forward wall is referenced to the display datum; the rear wall leans inward at the top to broadly follow the exterior diagonal. Its front offset, bottom/top Z stations, rear wall bottom/top Y stations, and fillet radius are independently editable in the configuration. All four corners are analytic fillets.
 
-## V008 — rear gusset corrected in the actual outside profile
+## V009 — rear gusset corrected in the actual outside profile
 
-The rear gusset in V005 did not alter the outer YZ arm wire, leaving the horizontal ledge visible. V008 constructs the **exterior diagonal** from the rear saddle sidewall (Y about 20.2 mm, Z about -7.8 mm) up to the lower rear support at (Y 49 mm, Z about 15.6 mm). Both arms and the plotted side reference share this same geometric wire; the separate hidden interior wedge is removed. A CAD regression probes physical BREP volume in the previously empty region. All dimensions are preliminary.
+The rear gusset in V005 did not alter the outer YZ arm wire, leaving the horizontal ledge visible. V009 constructs the **exterior diagonal** from the rear saddle sidewall (Y about 20.2 mm, Z about -7.8 mm) up to the lower rear support at (Y 49 mm, Z about 15.6 mm). Both arms and the plotted side reference share this same geometric wire; the separate hidden interior wedge is removed. A CAD regression probes physical BREP volume in the previously empty region. All dimensions are preliminary.
 
-## V008 — rear-open carrier and side-service branches
+## V009 — rear-open carrier and side-service branches
 
 **The V006 backing plate has been deleted from the actual printable CAD.** The main frame now has two 20 mm parametric mounting rails (each 6.2 mm thick) physically attached to the support arms. Each rail carries its own two provisional M3 through bores, rear recessed screw-head pockets, and PCB standoffs. All positions move with the rail; the rest of the back remains open.
 
 The V006 enclosed side windows have become **front-open U service branches**, independently configured for left SD access (13 mm initial throat) and right USB/Pi access (17 mm initial throat). The left and right PCB mounting rails have separately configurable edge-clearance openings and retain an outer load-bearing ligament. Clearance dimensions and connector locations remain provisional until physical measurements.
 
-See [V008 design contract](docs/V008_OPEN_BACK.md) and [Issue #6](https://github.com/Cdaprod/2020-extrusion-display-mount/issues/6).
+See [V009 design contract](docs/V009_OPEN_BACK.md) and [Issue #6](https://github.com/Cdaprod/2020-extrusion-display-mount/issues/6).
 
-## V008 — M3 pockets, independently spaced vertical rails, forward service access
+## V009 — M3 pockets, independently spaced vertical rails, forward service access
 
 The mounting rails are now distinct from the structural arms: `mount_rail_center_spacing_mm` controls the PCB mounting rail X pitch while `support_arm_center_spacing_mm` controls the supporting arm X pitch. The M3 screw pair stays vertical through constrained `board_screw_station_center_mm` and `board_screw_vertical_pitch_mm`. The rail height is separately constrained by `mount_rail_lower_station_s_mm` and `mount_rail_upper_station_s_mm`.
 
 Each M3 screw is recessed through a parametric Ø6.4 mm × 3 mm head pocket, with a minimum axial floor of 3 mm and independently adjustable radial wall limit. Full plate backing remains removed. The side service U openings now enter at the front/display-side rail (Y≈0–20, Z≈60–80); the rear diagonal remains intact. Unneeded rail height and rear envelope material are trimmed parametrically. Physical screw head and PCB port measurements remain provisional.
 
-[Full V008 parametric specification](docs/V008_PARAMETERS.md).
+[Full V009 parametric specification](docs/V009_PARAMETERS.md).
+
+## V009 — continuous centered mounting rails and retained rear screw pockets
+
+The SD/USB edge reliefs are limited to narrow inboard notches instead of crossing the M3 screw centerlines. The two full-height vertical rail spines and four integral screw-bearing regions remain continuous, with no perpendicular screw tabs. M3 through bores and blind rear head counterbores retain their configured radial wall and floor thickness; the open back permits driver approach. Port dimensions remain provisional and must be checked against actual connectors. The geometry-derived STEP/STL/PNG files are regenerated by the repository CAD workflow.
 
 ## Geometry-derived previews
 
@@ -84,11 +88,11 @@ Each M3 screw is recessed through a parametric Ø6.4 mm × 3 mm head pocket, wit
 
 | Item | STEP | STL | Meaning |
 |---|---|---|---|
-| **Full assembly** | [`COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V008.step`](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V008.step) | — | Import into Onshape: rail, complete main frame, lower keeper, notional screen envelope and fastener references |
+| **Full assembly** | [`COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V009.step`](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V009.step) | — | Import into Onshape: rail, complete main frame, lower keeper, notional screen envelope and fastener references |
 | **Main structural frame** | [`main.step`](step/main.step) | [`main.stl`](stl/main.stl) | One-piece: both front-service curved arms + open-back mounting rails + keyed upper clamp |
 | **Lower keeper** | [`keeper.step`](step/keeper.step) | [`keeper.stl`](stl/keeper.stl) | Removable clamp jaw with four nominal M4 passages |
 | 2020 rail reference | [`rail.step`](step/rail.step) | — | The original imported STEP, *rigidly rotated* into assembled orientation |
-| **Printable pair** | [`PRINTABLE_PARTS_V008.step`](step/PRINTABLE_PARTS_V008.step) | — | Main + keeper only, excludes rail, display and hardware |
+| **Printable pair** | [`PRINTABLE_PARTS_V009.step`](step/PRINTABLE_PARTS_V009.step) | — | Main + keeper only, excludes rail, display and hardware |
 | Open mounting-rail reference isolation | [`carrier.step`](step/carrier.step) | [`carrier.stl`](stl/carrier.stl) | *Two separate reference rails; both are already fused into the main body* |
 | Left and right arms | [`left_arm.step`](step/left_arm.step), [`right_arm.step`](step/right_arm.step) | `stl/left_arm.stl`, `stl/right_arm.stl` | *Reference subsolids; already fused into main body* |
 | Upper clamp design isolation | [`upper_saddle.step`](step/upper_saddle.step) | [`upper_saddle.stl`](stl/upper_saddle.stl) | *Reference subsolid; already fused into main body* |
@@ -99,7 +103,7 @@ The **only intended printable structural components are `main` and `keeper`**. D
 
 ## Parametric manufacturing contract
 
-| Parameter | V008 candidate | Status |
+| Parameter | V009 candidate | Status |
 |---|---:|---|
 | Imported rail length | 120 mm | **Verified from supplied STEP** |
 | Imported extrusion bounding cross-section | 20 × 20 mm | **Verified from supplied STEP** |
@@ -147,7 +151,7 @@ To revise after taking caliper measurements, edit [`config/mount_spec.json`](con
 
 ## Onshape import (iPhone or desktop)
 
-1. Import [`step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V008.step`](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V008.step) into your `2020-extrusion-mounted-display` document.
+1. Import [`step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V009.step`](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V009.step) into your `2020-extrusion-mounted-display` document.
 2. Leave **Y-axis up** unchecked. The model's +Z is up, +X runs along the reference rail.
 3. The assembly contains **rail reference**, **full main stand**, **lower keeper**, **provisional display envelope**, and **screw references**. Do not confuse reference solids with parts to print.
 4. For manufacturing, import `main.step` and `keeper.step` independently as well, or slice `stl/main.stl` and `stl/keeper.stl` after measured-fit acceptance.

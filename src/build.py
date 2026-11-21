@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V008.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V009.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -331,6 +331,8 @@ class Design:
             relief=self.cfg['sd_relief' if side<0 else 'usb_relief']
             if relief['enabled']:
                 ligament=width-relief['inner_cut_width_mm']-relief['overhang_mm']/2
+                if relief['inner_cut_width_mm']+relief['overhang_mm'] >= width/2:
+                    raise ValueError('Port notch reaches screw centerline and creates isolated mounting tabs')
                 if ligament<self.min_mount_rail_ligament_mm:
                     raise ValueError('Port relief leaves insufficient rail spine')
                 inner=x-side*width/2
@@ -489,7 +491,7 @@ class Design:
         for side,label in [(-1,'sd'),(1,'usb')]:
             branch=self.cfg['service_left' if side<0 else 'service_right']
             center=side*self.support_arm_center_spacing_mm/2
-            # The V008 path enters from Y<0 at the display side, not from
+            # The V009 path enters from Y<0 at the display side, not from
             # the exterior rear slope. Check the actual front opening up to Y=23.
             probe=block(center-1,branch['throat_start_y_mm']+2,
                         branch['throat_center_z_mm']-1,2,
@@ -708,7 +710,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V008 SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V009 SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -740,10 +742,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V008.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V009.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V008.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V009.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')
