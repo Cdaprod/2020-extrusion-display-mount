@@ -1,4 +1,4 @@
-"""V010: M3 mounting holes are integral to the actual sculpted arms."""
+"""V011: M3 mounting holes are integral to the actual sculpted arms."""
 import json,sys,unittest
 from pathlib import Path
 import cadquery as cq
@@ -17,7 +17,7 @@ class ModelTests(unittest.TestCase):
 
     def test_integrated_vertical_mount_pitches(self):
         d=self.d
-        self.assertEqual(self.cfg['release'],'V010')
+        self.assertEqual(self.cfg['release'],'V011')
         self.assertFalse(hasattr(d,'carrier'))
         self.assertFalse(hasattr(d,'carrier_rails'))
         self.assertEqual(d.mounting_x_centers_mm,(-39,39))
@@ -61,7 +61,7 @@ class ModelTests(unittest.TestCase):
             self.assertLess(result[key],.01)
         self.assertEqual(sum(k.startswith('rear_tool_clearance_') for k in result),4)
 
-    def test_v010_boss_trimming_is_constrained(self):
+    def test_v011_boss_trimming_is_constrained(self):
         d=self.d
         self.assertAlmostEqual(d.front_neck_width_mm,12.0)
         self.assertAlmostEqual(d.validate_mount_dimensions(),2.5)
@@ -77,10 +77,39 @@ class ModelTests(unittest.TestCase):
             bad=dict(self.cfg);bad[key]=value
             with self.assertRaises(ValueError):Design(bad).validate_mount_dimensions()
 
-    def test_v010_manufacturing_and_preview_outputs(self):
+    def test_screw_pitch_drives_both_opening_edges_and_rear_profile(self):
+        d=self.d
+        p=d.adaptive_profile
+        self.assertEqual(self.cfg['release'],'V011')
+        self.assertGreaterEqual(p['bottom_z']-p['screw_z'][0],
+                                d.screw_support_radius_mm+d.opening_transition_clearance_mm)
+        self.assertGreaterEqual(p['screw_z'][1]-p['top_z'],
+                                d.screw_support_radius_mm+d.opening_transition_clearance_mm)
+        self.assertGreater(p['top_z']-p['bottom_z'],2*d.arm_opening_corner_radius_mm)
+        alt=dict(self.cfg);alt['board_screw_station_center_mm']=45.0
+        q=Design(alt).adaptive_profile
+        self.assertNotEqual((p['bottom_z'],p['top_z']),(q['bottom_z'],q['top_z']))
+        alt2=dict(self.cfg);alt2['board_screw_vertical_pitch_mm']=49
+        q2=Design(alt2).adaptive_profile
+        self.assertNotEqual(p['bottom_z'],q2['bottom_z'])
+        self.assertNotEqual(p['top_z'],q2['top_z'])
+        invalid=dict(self.cfg);invalid['board_screw_vertical_pitch_mm']=31
+        with self.assertRaises(ValueError): Design(invalid).validate_mount_dimensions()
+
+    def test_both_curved_arms_remain_connected_and_have_throat_clearance(self):
+        for side in (-1,1):
+            arm=self.d.arm(side)
+            self.assertTrue(arm.isValid())
+            self.assertEqual(len(arm.Solids()),1)
+        p=self.d.adaptive_profile
+        self.assertGreater(p['roof_web_z'],self.d.screw_support_radius_mm)
+        self.assertGreaterEqual(p['outer_bulge_z'],self.d.arm_outer_rear_bulge_z_mm)
+        self.assertGreaterEqual(p['top_slope_rear_web_y'],self.d.opening_rear_web_mm)
+
+    def test_v011_manufacturing_and_preview_outputs(self):
         for name in ('main.step','left_arm.step','right_arm.step',
-                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V010.step',
-                     'PRINTABLE_PARTS_V010.step','M3_DISPLAY_SCREWS_REFERENCE.step'):
+                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V011.step',
+                     'PRINTABLE_PARTS_V011.step','M3_DISPLAY_SCREWS_REFERENCE.step'):
             self.assertTrue((ROOT/'step'/name).exists(),name)
         self.assertTrue((ROOT/'stl/main.stl').exists())
         self.assertFalse((ROOT/'step/carrier.step').exists())
