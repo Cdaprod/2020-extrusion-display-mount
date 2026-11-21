@@ -9,3 +9,5 @@
 - Run `python -m unittest discover -s tests -v` and rebuild with `xvfb-run -a python src/build.py`. A commit that changes geometry must update delivered outputs and `docs/validation.json`.
 - Make the arm outlines dimensionally coherent, maintain printer clearance and hardware serviceability, use metal fasteners/inserts rather than force-carrying plastic snaps.
 - Complete substantive tasks with deliverables and verify the outputs. When performing repository work, merge accepted verified changes to `main` unless explicitly told otherwise.
+
+- V002 design invariants: saddle interior bearing plane normal is +Z, display carrier plane must be at 90° to that plane, and the carrier lower/front datum must share Y=0 with the saddle/rail center. Preserve the two triangular support arms, M4 clamp screw paths, and M2.5 board tool access while rebuilding. The V001 46° tilt is superseded, not a target.

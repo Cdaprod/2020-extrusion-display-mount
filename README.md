@@ -1,10 +1,20 @@
-# 2020 Extrusion-Mounted Touch Display — Parametric V001
+# 2020 Extrusion-Mounted Touch Display — Parametric V002
 
 **Actual CadQuery BREP solids, STEP assemblies, STL component exports and CAD-derived previews.**
 
-This is a *provisional engineering prototype*, based on the user's tabletop triangular screen stand photos and corrected side-profile sketches. Its saddle is placed beneath the front/lower portion of the inclined display, not under a separate tabletop pedestal. The 120 mm × 20 mm × 20 mm extrusion solid is the **exact user-supplied `2020-2O_rail.step`**, rigidly rotated into the assembly. Its two opposing T-slots are now on the +Z/top and −Z/bottom faces.
+This is a *provisional engineering prototype*, based on the user's tabletop triangular screen stand photos and corrected side-profile sketches. Its saddle is centered at the display carrier's front/rear datum Y=0, with its inside bearing face perpendicular to the carrier. The triangular arms extend behind the upright display, not diagonally beneath an inclined tabletop stand. The 120 mm × 20 mm × 20 mm extrusion solid is the **exact user-supplied `2020-2O_rail.step`**, rigidly rotated into the assembly. Its two opposing T-slots are now on the +Z/top and −Z/bottom faces.
 
 **There are no claimed measurements of the real touchscreen, PCB hole pitch, stand angle or physical rail fit.** Those values are editable initial candidates in [`config/mount_spec.json`](config/mount_spec.json). Do not print and install this on a running printer without measuring and validating those interfaces.
+
+## V002 — corrected orthogonal display / saddle datum
+
+- **Display carrier vertical (90°)** to the saddle's inner horizontal bearing face, not V001's provisional 46° inclination.
+- **Centered**: the carrier's lower/front Y datum, rail section center, and saddle centerline share **Y = 0 mm**; all three are also centered across X.
+- **Both complete triangular support arms rebuilt** with an open web extending rearward behind the upright carrier, still integrated into one solid main frame.
+- **Existing physical reference STEP unchanged**, oriented by the original rigid 120° assembly transform; upper saddle and removable lower keeper retain their M4 hole patterns.
+- Four M2.5 candidate display board mounting stations and straight rear driver paths retained. Dimensional values remain provisional until physical measurements.
+
+The orthogonal and centering acceptance gates can be relaxed explicitly for a future revised configuration by setting `require_perpendicular_display` or `require_display_centering` to `false`. They remain enabled for this release. [Engineering datum explanation](docs/V002_ALIGNMENT.md).
 
 ## Geometry-derived previews
 
@@ -12,7 +22,7 @@ This is a *provisional engineering prototype*, based on the user's tabletop tria
 
 ![2020 display assembly from generated CAD](previews/assembly_isometric.png)
 
-### Complete one-piece structural frame: two triangular arms, inclined carrier, top saddle
+### Complete one-piece structural frame: two triangular arms, upright carrier, top saddle
 
 ![Main frame from CAD](previews/main_frame_only.png)
 
@@ -34,11 +44,11 @@ This is a *provisional engineering prototype*, based on the user's tabletop tria
 
 | Item | STEP | STL | Meaning |
 |---|---|---|---|
-| **Full assembly** | [`COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V001.step`](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V001.step) | — | Import into Onshape: rail, complete main frame, lower keeper, notional screen envelope and fastener references |
-| **Main structural frame** | [`main.step`](step/main.step) | [`main.stl`](stl/main.stl) | One-piece: both full triangular arms + inclined carrier + upper clamp |
+| **Full assembly** | [`COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V002.step`](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V002.step) | — | Import into Onshape: rail, complete main frame, lower keeper, notional screen envelope and fastener references |
+| **Main structural frame** | [`main.step`](step/main.step) | [`main.stl`](stl/main.stl) | One-piece: both full triangular arms + upright carrier + upper clamp |
 | **Lower keeper** | [`keeper.step`](step/keeper.step) | [`keeper.stl`](stl/keeper.stl) | Removable clamp jaw with four nominal M4 passages |
 | 2020 rail reference | [`rail.step`](step/rail.step) | — | The original imported STEP, *rigidly rotated* into assembled orientation |
-| **Printable pair** | [`PRINTABLE_PARTS_V001.step`](step/PRINTABLE_PARTS_V001.step) | — | Main + keeper only, excludes rail, display and hardware |
+| **Printable pair** | [`PRINTABLE_PARTS_V002.step`](step/PRINTABLE_PARTS_V002.step) | — | Main + keeper only, excludes rail, display and hardware |
 | Front carrier design isolation | [`carrier.step`](step/carrier.step) | [`carrier.stl`](stl/carrier.stl) | *Reference subsolid; already fused into the main body* |
 | Left and right arms | [`left_arm.step`](step/left_arm.step), [`right_arm.step`](step/right_arm.step) | `stl/left_arm.stl`, `stl/right_arm.stl` | *Reference subsolids; already fused into main body* |
 | Upper clamp design isolation | [`upper_saddle.step`](step/upper_saddle.step) | [`upper_saddle.stl`](stl/upper_saddle.stl) | *Reference subsolid; already fused into main body* |
@@ -49,7 +59,7 @@ The **only intended printable structural components are `main` and `keeper`**. D
 
 ## Parametric manufacturing contract
 
-| Parameter | V001 candidate | Status |
+| Parameter | V002 candidate | Status |
 |---|---:|---|
 | Imported rail length | 120 mm | **Verified from supplied STEP** |
 | Imported extrusion bounding cross-section | 20 × 20 mm | **Verified from supplied STEP** |
@@ -58,7 +68,7 @@ The **only intended printable structural components are `main` and `keeper`**. D
 | Side clearance relative to 20 mm rail | 0.35 mm per side | Provisional |
 | Two triangular arm center spacing | 78 mm | Provisional |
 | Arm thickness | 8 mm | Provisional |
-| Display inclination above horizontal | 46° | Photo/sketch-derived candidate |
+| Display inclination above horizontal | 90° | User-specified perpendicular geometry |
 | Display frame width | 176 mm | Provisional |
 | Display frame length along slope | 80 mm | Provisional |
 | PCB mounting hole pattern | X = ±28 mm, sloped station S = 30 or 61 mm | **Unmeasured** |
@@ -67,7 +77,7 @@ The **only intended printable structural components are `main` and `keeper`**. D
 | Underside clamp fasteners | Four M4 clearance bores + upper-body insert pockets | M4 candidate, verify insert dimensions |
 | Rear straight-tool clearance | Ø6 mm envelope from all 4 stations | CAD check passed; real driver not verified |
 
-All positions use a right-handed frame: **X across the screen/along the rail, Y front-to-rear, Z upward**. The carrier uses `S` measured along the incline from its lower/front edge, not global Y or Z. The display mounting bosses project toward the screen along the normal of the inclined plate. Screws enter from the **rear** through the carrier and pass toward the PCB. Whether your board holes are tapped, through-holes for small nuts, or require heat-set inserts still needs measurement.
+All positions use a right-handed frame: **X across the screen/along the rail, Y front-to-rear, Z upward**. The carrier uses `S` measured along the carrier from its lower/front edge, not global Y or Z. The display mounting bosses project toward the screen along the normal of the carrier plate. Screws enter from the **rear** through the carrier and pass toward the PCB. Whether your board holes are tapped, through-holes for small nuts, or require heat-set inserts still needs measurement.
 
 ### Why this fastening approach
 
@@ -97,7 +107,7 @@ To revise after taking caliper measurements, edit [`config/mount_spec.json`](con
 
 ## Onshape import (iPhone or desktop)
 
-1. Import [`step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V001.step`](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V001.step) into your `2020-extrusion-mounted-display` document.
+1. Import [`step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V002.step`](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V002.step) into your `2020-extrusion-mounted-display` document.
 2. Leave **Y-axis up** unchecked. The model's +Z is up, +X runs along the reference rail.
 3. The assembly contains **rail reference**, **full main stand**, **lower keeper**, **provisional display envelope**, and **screw references**. Do not confuse reference solids with parts to print.
 4. For manufacturing, import `main.step` and `keeper.step` independently as well, or slice `stl/main.stl` and `stl/keeper.stl` after measured-fit acceptance.

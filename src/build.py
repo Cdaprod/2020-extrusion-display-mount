@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V001.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V002.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -149,20 +149,32 @@ class Design:
         return check_solid('keeper', solid.clean())
 
     def rib_outline(self):
-        # A structural triangular side arm with a diagonal display attachment.
-        # The rail-contact portion overlaps the upper saddle's top bridge.
-        y0,z0 = self.path_point(0, -2)
-        y1,z1 = self.path_point(self.display_height_along_slope_mm+14, -2)
-        outer = [(-25, self.bridge_top-1),
-                 (self.arm_rear_foot_y_mm, self.bridge_top-1),
-                 (self.arm_rear_top_y_mm, z1+3),
-                 (y1, z1+3),
-                 (y0, z0)]
-        # Opening leaves continuous load paths: lower rail foot, rear diagonal,
-        # and upper display support. Open polygon avoids screw stations.
-        inner = [(-5, self.bridge_top+15),
-                 (self.arm_rear_top_y_mm-11, self.bridge_top+15),
-                 (self.arm_rear_top_y_mm-11, z1-18)]
+        """Triangular right-angle support, referenced to the display and saddle.
+
+        At 90 degrees the display is vertical above the rail centerline.  The
+        rear leg slopes from the upper display support toward the long bottom
+        foot, while the front rail-side leg remains tied into the carrier.
+        The open triangle is internal to the rib, leaving no trapped material
+        across the rear screwdriver corridors at the board mounting X stations.
+        """
+        y0,z0 = self.path_point(0,-2)
+        y1,z1 = self.path_point(self.display_height_along_slope_mm+14,-2)
+        foot_y=self.arm_rear_foot_y_mm
+        foot_z=self.bridge_top-1
+        top_y=self.arm_rear_top_y_mm
+        # Keep the top node attached to the carrier plate's back surface.
+        # The rear diagonal descends from that node to the foot endpoint.
+        outer = [(self.arm_front_y_mm-13, foot_z),
+                 (foot_y, foot_z),
+                 (foot_y, foot_z+10),
+                 (top_y+4,z1+3),
+                 (y1,z1+3),
+                 (y0,z0)]
+        # Triangle corners are defined as relative support stations rather
+        # than absolute display dimensions; the rib remains open at 90 deg.
+        inner = [(self.arm_front_y_mm+15, foot_z+19),
+                 (foot_y-13, foot_z+19),
+                 (self.arm_front_y_mm+15, z1-18)]
         return outer,inner
 
     def arm(self, side):
@@ -298,6 +310,16 @@ class Design:
             report[name+'_overlap_mm3']=round(vol,5)
             if vol>0.01:
                 raise ValueError(f'{name}: solid collision volume {vol:.4f} mm^3')
+        # The saddle bearing plane is XY (Z-up normal); carrier is XZ at 90.
+        # Their projected lower mounting datums coincide at Y=0.
+        report['carrier_angle_to_saddle_deg']=self.display_angle_deg
+        report['carrier_to_saddle_center_offset_y_mm']=self.arm_front_y_mm
+        report['carrier_perpendicular_to_saddle']=abs(self.display_angle_deg-90.0)<.00001
+        report['carrier_centered_over_saddle']=abs(self.arm_front_y_mm)<.00001
+        if self.cfg.get('require_perpendicular_display', False) and abs(self.display_angle_deg-90.0)>.00001:
+            raise ValueError('Display face must be perpendicular to saddle inside bearing plane')
+        if self.cfg.get('require_display_centering', False) and abs(self.arm_front_y_mm)>.00001:
+            raise ValueError('Display datum must be centered over saddle in Y')
         # Check all through-holes have a clear straight tool path to rear.
         # The first few mm of each ray are outside the carrier rear face.
         n=self.normal
@@ -438,11 +460,11 @@ def render_engineering_side_profile(d, output):
         ys,zs=d.path_point(station,d.display_standoff_height_mm)
         ax.plot(ys,zs,'o',markersize=7,color='#eab308',mec='#713f12',zorder=9)
         ax.annotate('M2.5 candidate\nS = '+str(station), (ys,zs),
-                    xytext=(-36,8 if station==d.board_hole_s_mm[0] else 18),
+                    xytext=(-103,6 if station==d.board_hole_s_mm[0] else 12),
                     textcoords='offset points',fontsize=8,color='#854d0e',
                     arrowprops=dict(arrowstyle='-',color='#a16207',lw=.7))
-    ax.annotate('Inclined carrier + 2 arms\n'+str(d.display_angle_deg)+'° provisional',
-                xy=p1,xytext=(-17,112),fontsize=10,weight='bold',color='#0369a1',
+    ax.annotate('Display carrier + 2 arms\n'+str(d.display_angle_deg)+'° to saddle bearing face',
+                xy=p1,xytext=(-51,122),fontsize=10,weight='bold',color='#0369a1',
                 arrowprops=dict(arrowstyle='->',lw=1.3,color='#0369a1'))
     ax.annotate('Removable M4 keeper',xy=(0,d.lower_keeper_top_z_mm-3),
                 xytext=(31,-23),fontsize=9,color='#9a3412',
@@ -450,13 +472,14 @@ def render_engineering_side_profile(d, output):
     ax.annotate('Two triangulated ribs, open inside',xy=(35,50),xytext=(68,45),
                 fontsize=9,ha='left',color='#334155',
                 arrowprops=dict(arrowstyle='->',color='#334155'))
-    ax.axvline(0,color='#94a3b8',ls='--',lw=.6,zorder=0)
+    ax.axvline(0,color='#0f766e',ls='--',lw=1,zorder=0)
+    ax.text(1,133,'CENTERED / Y = 0',fontsize=8,color='#0f766e')
     ax.axhline(0,color='#94a3b8',ls='--',lw=.6,zorder=0)
     ax.set_xlabel('Y (mm)   FRONT  ←                                      →  REAR',fontsize=11)
     ax.set_ylabel('Z height (mm)',fontsize=11)
-    ax.set_xlim(-58,112);ax.set_ylim(-27,123)
+    ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V001 SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V002 SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -488,10 +511,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V001.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V002.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V001.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V002.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')

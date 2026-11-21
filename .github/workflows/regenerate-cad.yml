@@ -1,0 +1,46 @@
+name: Regenerate CAD geometry and previews
+
+on:
+  push:
+    branches:
+      - main
+      - 'codex/**'
+    paths:
+      - 'src/**'
+      - 'config/**'
+      - 'tests/**'
+      - '.github/workflows/regenerate-cad.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CAD and renderer dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1 libxrender1
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt matplotlib
+      - name: Generate actual STEP, STL, validation and PNG previews
+        run: xvfb-run -a python src/build.py
+      - name: Run parametric engineering tests
+        run: python -m unittest discover -s tests -v
+      - name: Commit generated artifacts to branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add step/ stl/ previews/ docs/validation.json
+          if ! git diff --cached --quiet; then
+            git commit -m "build(cad): publish V002 generated STEP/STL and real geometry previews"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
