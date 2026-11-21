@@ -54,7 +54,7 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(self.cfg['board_hole_s_mm'][1]-self.cfg['board_hole_s_mm'][0],31)
 
     def test_perpendicular_carrier_and_centered_saddle_datums(self):
-        self.assertEqual(self.cfg['release'], 'V002')
+        self.assertEqual(self.cfg['release'], 'V003')
         self.assertAlmostEqual(self.d.display_angle_deg,90.0,places=6)
         self.assertAlmostEqual(self.d.arm_front_y_mm,0.0,places=6)
         self.assertAlmostEqual(self.d.tangent[0],0.0,places=6)
@@ -84,6 +84,18 @@ class ModelTests(unittest.TestCase):
         changed['display_angle_deg']=85.0
         changed['arm_front_y_mm']=3.0
         self.assertTrue(Design(changed).carrier().isValid())
+
+    def test_v003_key_is_inside_actual_rail_slot(self):
+        self.assertTrue(self.d.top_slot_key_enabled)
+        self.assertGreater(self.d.top_slot_key_projection_mm,0)
+        report=self.d.validate(self.parts)
+        self.assertEqual(report['top_slot_key_rail_overlap_mm3'],0)
+
+    def test_v003_curved_arm_has_vertical_obround_and_real_arcs(self):
+        self.assertGreater(self.parts['left_arm'].Volume(),1000)
+        arcs=sum(e.geomType()=='CIRCLE' for e in self.parts['left_arm'].Edges())
+        self.assertGreaterEqual(arcs,4)
+        self.assertEqual(self.d.arm_service_slot_angle_deg,90)
 
     def test_changes_to_configuration_update_geometry(self):
         revised=dict(self.cfg)
