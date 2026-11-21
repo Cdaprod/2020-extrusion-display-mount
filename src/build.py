@@ -552,9 +552,14 @@ def render_engineering_side_profile(d, output):
         return ring
     support_pts=curve_points(d.rib_workplane().wire().val())
     ax.add_patch(Polygon(support_pts,closed=True,facecolor='#475569',edgecolor='#1e293b',lw=1.8,zorder=3))
-    holewire=(cq.Workplane('YZ').center(d.arm_service_slot_center_y_mm,d.arm_service_slot_center_z_mm)
-              .slot2D(d.arm_service_slot_length_mm,d.arm_service_slot_width_mm,
-                      angle=d.arm_service_slot_angle_deg).wire().val())
+    # Render the TRUE opening BREP: V005 replaced the old vertical capsule
+    # with a filleted tapered quadrilateral, but the side drawing still
+    # depicted the V003 obround. Choose the planar cap's actual outer wire.
+    opening=d.arm_service_opening()
+    side_faces=[f for f in opening.Faces() if abs(f.normalAt().x)>0.999]
+    if not side_faces:
+        raise ValueError('Cannot find planar side of parametric opening')
+    holewire=max(side_faces,key=lambda f:f.Area()).outerWire()
     ax.add_patch(Polygon(curve_points(holewire),closed=True,facecolor='#f8fafc',edgecolor='#1e293b',lw=1.5,zorder=4))
     clamp_y = d.upper_clamp_width_mm/2
     inside = d.clamp_inner_half
@@ -590,7 +595,7 @@ def render_engineering_side_profile(d, output):
     ax.annotate('Removable M4 keeper',xy=(0,d.lower_keeper_top_z_mm-3),
                 xytext=(31,-23),fontsize=9,color='#9a3412',
                 arrowprops=dict(arrowstyle='->',color='#9a3412'))
-    ax.annotate('Two curved ribs / vertical obround',xy=(35,50),xytext=(68,45),
+    ax.annotate('Two curved ribs / tapered service opening',xy=(35,50),xytext=(68,45),
                 fontsize=9,ha='left',color='#334155',
                 arrowprops=dict(arrowstyle='->',color='#334155'))
     ax.axvline(0,color='#0f766e',ls='--',lw=1,zorder=0)
