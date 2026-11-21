@@ -290,7 +290,7 @@ class Design:
         clamp = self.upper_clamp()
         la,ra = self.arm(-1),self.arm(1)
         # Rear cross-tie at frame foot, leaving center open for PCB screwdriver access.
-        tie_y=self.arm_rear_foot_y_mm-9
+        tie_y=self.arm_outer_lower_rear_y_mm-9
         cross = block(-self.arm_spacing_mm/2-self.arm_thickness_mm/2,
                       tie_y,self.bridge_top,
                       self.arm_spacing_mm+self.arm_thickness_mm,8,9)
