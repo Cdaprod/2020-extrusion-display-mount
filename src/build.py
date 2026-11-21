@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V002.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V003.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -120,9 +120,9 @@ class Design:
                        bottom, length, wall, leg_height) for sign in (-1, 1)]
         body = union(top, *walls)
         if self.top_slot_key_enabled:
-            key = block(-length/2+15, -self.top_slot_key_width_mm/2,
+            key = block(-self.top_slot_key_length_mm/2, -self.top_slot_key_width_mm/2,
                         self.bridge_bottom-self.top_slot_key_projection_mm,
-                        length-30, self.top_slot_key_width_mm,
+                        self.top_slot_key_length_mm, self.top_slot_key_width_mm,
                         self.top_slot_key_projection_mm+.1)
             body = union(body, key)
         # Blind M4 heat-set pockets inserted from below; NO tapped-printed threads assumed.
@@ -148,47 +148,50 @@ class Design:
                 solid = solid.cut(tool).cut(cb)
         return check_solid('keeper', solid.clean())
 
-    def rib_outline(self):
-        """Triangular right-angle support, referenced to the display and saddle.
+    def rib_workplane(self):
+        """Freeform-inspired sculpted arm with true circular transition arcs.
 
-        At 90 degrees the display is vertical above the rail centerline.  The
-        rear leg slopes from the upper display support toward the long bottom
-        foot, while the front rail-side leg remains tied into the carrier.
-        The open triangle is internal to the rib, leaving no trapped material
-        across the rear screwdriver corridors at the board mounting X stations.
+        Coordinates are Y,Z in the extrusion's cross-sectional plane.  Arm
+        extent, rounded rear shoulder, lower taper and toe are all controlled
+        by config/mount_spec.json; this is not a raster-traced mesh profile.
         """
-        y0,z0 = self.path_point(0,-2)
-        y1,z1 = self.path_point(self.display_height_along_slope_mm+14,-2)
-        foot_y=self.arm_rear_foot_y_mm
-        foot_z=self.bridge_top-1
-        top_y=self.arm_rear_top_y_mm
-        # Keep the top node attached to the carrier plate's back surface.
-        # The rear diagonal descends from that node to the foot endpoint.
-        outer = [(self.arm_front_y_mm-13, foot_z),
-                 (foot_y, foot_z),
-                 (foot_y, foot_z+10),
-                 (top_y+4,z1+3),
-                 (y1,z1+3),
-                 (y0,z0)]
-        # Triangle corners are defined as relative support stations rather
-        # than absolute display dimensions; the rib remains open at 90 deg.
-        inner = [(self.arm_front_y_mm+15, foot_z+19),
-                 (foot_y-13, foot_z+19),
-                 (self.arm_front_y_mm+15, z1-18)]
-        return outer,inner
+        ztop = (self.arm_front_z_mm + self.display_height_along_slope_mm
+                + self.arm_outer_rear_shoulder_z_above_carrier_mm)
+        toe_y = self.arm_front_toe_y_mm
+        foot_z = self.bridge_top - 0.75
+        rear_y = self.arm_outer_lower_rear_y_mm
+        bulge_y = self.arm_outer_rear_bulge_y_mm
+        bulge_z = self.arm_outer_rear_bulge_z_mm
+        shoulder_y = self.arm_outer_rear_shoulder_y_mm
+        r = self.arm_curve_radius_mm
+        return (cq.Workplane('YZ')
+            .moveTo(toe_y, foot_z+r)
+            .threePointArc((toe_y+0.32*r,foot_z+0.32*r),(toe_y+r,foot_z))
+            .lineTo(rear_y-r,foot_z)
+            .threePointArc((rear_y-0.15*r,foot_z+0.25*r),(rear_y,foot_z+r))
+            .lineTo(bulge_y,bulge_z-5)
+            .threePointArc((bulge_y+0.3*r,bulge_z),(bulge_y-0.75*r,bulge_z+5))
+            .lineTo(shoulder_y+r,ztop-r)
+            .threePointArc((shoulder_y+0.45*r,ztop-0.22*r),(shoulder_y,ztop))
+            .lineTo(self.arm_front_y_mm+1,ztop)
+            .lineTo(self.arm_front_y_mm+1,self.arm_front_z_mm)
+            .close())
 
     def arm(self, side):
         if side not in (-1,1):
             raise ValueError('side must be +/-1')
-        outer, inner = self.rib_outline()
-        # YZ sketch plane's normal is +X.
-        arm = cq.Workplane('YZ').polyline(outer).close().extrude(self.arm_thickness_mm).val()
-        tool = cq.Workplane('YZ').polyline(inner).close().extrude(self.arm_thickness_mm+2).val()
-        arm = arm.cut(tool.translate((-1,0,0))).clean()
-        if self.arm_outline_fillet_mm > 0:
-            arm = cq.Workplane(obj=arm).edges('|X').fillet(self.arm_outline_fillet_mm).val().clean()
-        center = side*self.arm_spacing_mm/2
-        arm = arm.translate((center-self.arm_thickness_mm/2, 0, 0))
+        arm=self.rib_workplane().extrude(self.arm_thickness_mm).val()
+        # Cut a true obround (vertical rounded-ended service opening) through
+        # the entire side-arm width, replacing V002's polygonal triangle.
+        opening=(cq.Workplane('YZ')
+                 .center(self.arm_service_slot_center_y_mm,self.arm_service_slot_center_z_mm)
+                 .slot2D(self.arm_service_slot_length_mm,
+                         self.arm_service_slot_width_mm,
+                         angle=self.arm_service_slot_angle_deg)
+                 .extrude(self.arm_thickness_mm+2).val().translate((-1,0,0)))
+        arm=arm.cut(opening).clean()
+        center=side*self.arm_spacing_mm/2
+        arm=arm.translate((center-self.arm_thickness_mm/2,0,0))
         return check_solid(('left' if side<0 else 'right')+'_arm',arm)
 
     def carrier(self):
@@ -320,6 +323,19 @@ class Design:
             raise ValueError('Display face must be perpendicular to saddle inside bearing plane')
         if self.cfg.get('require_display_centering', False) and abs(self.arm_front_y_mm)>.00001:
             raise ValueError('Display datum must be centered over saddle in Y')
+        # The shallow mouth-entry key must be inside the source rail's actual
+        # +Z T-slot void. It is an indexing feature, not the load-bearing fastener.
+        report['top_slot_key_enabled']=bool(self.top_slot_key_enabled)
+        if self.top_slot_key_enabled:
+            key=block(-self.top_slot_key_length_mm/2,
+                      -self.top_slot_key_width_mm/2,
+                      self.bridge_bottom-self.top_slot_key_projection_mm,
+                      self.top_slot_key_length_mm,self.top_slot_key_width_mm,
+                      self.top_slot_key_projection_mm)
+            kv=key.intersect(rail).Volume()
+            report['top_slot_key_rail_overlap_mm3']=round(kv,5)
+            if kv>.01:
+                raise ValueError(f'Top locating key hits rail: {kv} mm3')
         # Check all through-holes have a clear straight tool path to rear.
         # The first few mm of each ray are outside the carrier rear face.
         n=self.normal
@@ -436,9 +452,37 @@ def render_engineering_side_profile(d, output):
     ax.add_patch(Rectangle((-10,-10),20,20,facecolor='#b0bac6',
                             edgecolor='#334155',linewidth=1.8,zorder=4))
     ax.text(0,0,'2020\nRAIL',ha='center',va='center',fontsize=10,weight='bold',color='#334155',zorder=7)
-    outer, inner = d.rib_outline()
-    ax.add_patch(Polygon(outer,closed=True,facecolor='#475569',edgecolor='#1e293b',lw=1.8,zorder=3))
-    ax.add_patch(Polygon(inner,closed=True,facecolor='#f8fafc',edgecolor='#1e293b',lw=1.5,zorder=3))
+    # Project the actual curved parametric wire into the engineering drawing.
+    # Trace edges in connectivity order; do not connect unordered BREP edges.
+    def curve_points(wire):
+        edges=list(wire.Edges())
+        ring=[]
+        first=edges.pop(0)
+        n=max(3,int(first.Length()/0.35))
+        ring.extend((first.positionAt(i/n).y,first.positionAt(i/n).z) for i in range(n))
+        last=first.endPoint()
+        while edges:
+            best=None
+            for index,e in enumerate(edges):
+                for reverse,q in ((False,e.startPoint()),(True,e.endPoint())):
+                    d=(q-last).Length
+                    if best is None or d<best[0]:
+                        best=(d,index,reverse)
+            d,index,reverse=best
+            if d>0.01:
+                raise ValueError(f'Unconnected projected rib-wire edge: gap {d:.3f} mm')
+            e=edges.pop(index)
+            n=max(3,int(e.Length()/0.35))
+            ring.extend((e.positionAt((1-i/n) if reverse else i/n).y,
+                         e.positionAt((1-i/n) if reverse else i/n).z) for i in range(n))
+            last=e.startPoint() if reverse else e.endPoint()
+        return ring
+    support_pts=curve_points(d.rib_workplane().wire().val())
+    ax.add_patch(Polygon(support_pts,closed=True,facecolor='#475569',edgecolor='#1e293b',lw=1.8,zorder=3))
+    holewire=(cq.Workplane('YZ').center(d.arm_service_slot_center_y_mm,d.arm_service_slot_center_z_mm)
+              .slot2D(d.arm_service_slot_length_mm,d.arm_service_slot_width_mm,
+                      angle=d.arm_service_slot_angle_deg).wire().val())
+    ax.add_patch(Polygon(curve_points(holewire),closed=True,facecolor='#f8fafc',edgecolor='#1e293b',lw=1.5,zorder=4))
     clamp_y = d.upper_clamp_width_mm/2
     inside = d.clamp_inner_half
     ax.add_patch(Rectangle((-clamp_y,d.bridge_bottom),d.upper_clamp_width_mm,
@@ -450,6 +494,10 @@ def render_engineering_side_profile(d, output):
     ax.add_patch(Rectangle((-clamp_y,d.lower_keeper_top_z_mm-d.lower_keeper_thickness_mm),
                             d.upper_clamp_width_mm,d.lower_keeper_thickness_mm,
                             facecolor='#d97706',edgecolor='#9a3412',zorder=5))
+    if d.top_slot_key_enabled:
+        ax.add_patch(Rectangle((-d.top_slot_key_width_mm/2,d.bridge_bottom-d.top_slot_key_projection_mm),
+                               d.top_slot_key_width_mm,d.top_slot_key_projection_mm,
+                               facecolor='#0f766e',edgecolor='#065f46',zorder=8))
     p0 = d.path_point(0)
     p1 = d.path_point(d.display_height_along_slope_mm)
     p2 = d.path_point(d.display_height_along_slope_mm,-d.display_plate_thickness_mm)
@@ -469,7 +517,7 @@ def render_engineering_side_profile(d, output):
     ax.annotate('Removable M4 keeper',xy=(0,d.lower_keeper_top_z_mm-3),
                 xytext=(31,-23),fontsize=9,color='#9a3412',
                 arrowprops=dict(arrowstyle='->',color='#9a3412'))
-    ax.annotate('Two triangulated ribs, open inside',xy=(35,50),xytext=(68,45),
+    ax.annotate('Two curved ribs / vertical obround',xy=(35,50),xytext=(68,45),
                 fontsize=9,ha='left',color='#334155',
                 arrowprops=dict(arrowstyle='->',color='#334155'))
     ax.axvline(0,color='#0f766e',ls='--',lw=1,zorder=0)
@@ -479,7 +527,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V002 SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V003 SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -511,10 +559,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V002.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V003.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V002.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V003.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')

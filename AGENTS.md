@@ -11,3 +11,5 @@
 - Complete substantive tasks with deliverables and verify the outputs. When performing repository work, merge accepted verified changes to `main` unless explicitly told otherwise.
 
 - V002 design invariants: saddle interior bearing plane normal is +Z, display carrier plane must be at 90° to that plane, and the carrier lower/front datum must share Y=0 with the saddle/rail center. Preserve the two triangular support arms, M4 clamp screw paths, and M2.5 board tool access while rebuilding. The V001 46° tilt is superseded, not a target.
+
+- V003 Freeform silhouette acceptance: two full sculpted arms with radiused upper rear shoulder, swept angled back, radiused lower/rear transitions, front toe, and tall vertical rounded obround opening. The centered top saddle has an enabled shallow key entering the actual rail STEP's +Z T-slot, validated by zero volume overlap. Do not revert to V002's hard triangular cutout. The 90° display/saddle and Y=0 alignment, lower M4 keeper, four M2.5 board mounts and unobstructed rear access must remain.
