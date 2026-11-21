@@ -54,7 +54,7 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(self.cfg['board_hole_s_mm'][1]-self.cfg['board_hole_s_mm'][0],31)
 
     def test_perpendicular_carrier_and_centered_saddle_datums(self):
-        self.assertEqual(self.cfg['release'], 'V005')
+        self.assertEqual(self.cfg['release'], 'V006')
         self.assertAlmostEqual(self.d.display_angle_deg,90.0,places=6)
         self.assertAlmostEqual(self.d.arm_front_y_mm,0.0,places=6)
         self.assertAlmostEqual(self.d.tangent[0],0.0,places=6)
@@ -116,11 +116,15 @@ class ModelTests(unittest.TestCase):
                 self.assertAlmostEqual(dot,0,places=5)
                 self.assertAlmostEqual(math.hypot(*radius),section['radius'],places=5)
 
-    def test_v005_gusset_reaches_below_saddle_top(self):
-        g=self.d.arm_lower_gusset()
-        self.assertLess(g.BoundingBox().zmin,self.d.bridge_bottom)
-        self.assertGreater(g.BoundingBox().ymax,self.d.upper_clamp_width_mm/2)
-        self.assertTrue(g.isValid())
+    def test_v006_exterior_gusset_is_visible_and_solid(self):
+        stations=self.d.rib_profile_stations()
+        root=stations[2]
+        self.assertAlmostEqual(root[0],self.d.upper_clamp_width_mm/2-self.d.arm_gusset_saddle_overlap_mm)
+        self.assertLess(root[1],self.d.bridge_bottom-3)
+        self.assertGreater(stations[3][0],root[0]+12)
+        self.assertLess(self.parts['left_arm'].BoundingBox().zmin,0)
+        report=self.d.validate(self.parts)
+        self.assertGreater(report['visible_rear_gusset_sample_mm3'],1)
 
     def test_v005_opening_is_parametric_and_forward_shifted(self):
         aperture=self.d.arm_service_opening()

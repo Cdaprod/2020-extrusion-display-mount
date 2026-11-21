@@ -1,5 +1,5 @@
 {
-  "release": "V005",
+  "release": "V006",
   "units": "mm",
   "rail_reference_length_mm": 120,
   "rail_nominal_size_mm": 20,
@@ -53,7 +53,7 @@
   "display_side_window_length_mm": 48,
   "rear_access_tool_diameter_mm": 6,
   "nominal_display_reference_thickness_mm": 5,
-  "provenance": "V005 user IMG_9096: add load-bearing triangular rear saddle gusset beneath V004 horizontal foot; move opening toward carrier and reshape as a rounded tapered trapezoid with rear edge tracking outer support slope.",
+  "provenance": "V006 fixes missing external rear gusset; external profile descends from saddle rear wall and rises diagonally into support. V005 hidden interior gusset replaced. User IMG_9098.",
   "require_perpendicular_display": true,
   "require_display_centering": true,
   "arm_outer_rear_shoulder_y_mm": 16,

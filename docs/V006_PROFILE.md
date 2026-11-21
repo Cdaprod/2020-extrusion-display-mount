@@ -1,0 +1,3 @@
+# V006 exterior rear gusset
+
+The V005 user image shows the bottom profile remains flat and the rear gusset is invisible. V006 makes the profile descend along the rear saddle wall to Z=-7.8 mm and then ascend diagonally toward the rear arm foot at Y=49 mm, Z approximately 15.6 mm. The source profile, left/right arm BREP and rendered engineering view all use the same wire. The old fused internal wedge is removed. An occupancy regression samples the actual arm below the old horizontal ledge, outside the rear saddle wall. Preserve the indexed rail key, keeper, board screw access, and 90 degree display datum. Dimensions remain unverified.
