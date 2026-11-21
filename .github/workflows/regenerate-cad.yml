@@ -33,14 +33,16 @@ jobs:
           python -m pip install -r requirements.txt matplotlib
       - name: Generate actual STEP, STL, validation and PNG previews
         run: xvfb-run -a python src/build.py
+      - name: Delete obsolete separated-carrier artifacts
+        run: git rm -f --ignore-unmatch step/carrier.step stl/carrier.stl previews/display_carrier.png
       - name: Run parametric engineering tests
         run: python -m unittest discover -s tests -v
       - name: Commit generated artifacts to branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add step/ stl/ previews/ docs/validation.json
+          git add -A step/ stl/ previews/ docs/validation.json
           if ! git diff --cached --quiet; then
-            git commit -m "build(cad): publish V002 generated STEP/STL and real geometry previews"
+            git commit -m "build(cad): regenerate integral-arm geometry, STEP/STL, and previews"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi

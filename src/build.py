@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V008.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V009.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -61,7 +61,7 @@ class Design:
     @property
     def mounting_x_centers_mm(self):
         """Symmetric X stations. Mount rails move independently of support arms."""
-        h=self.mount_rail_center_spacing_mm/2
+        h=self.mount_hole_center_spacing_mm/2
         return (-h,h)
 
     @property
@@ -72,29 +72,34 @@ class Design:
                 self.board_screw_station_center_mm+h)
 
     def validate_mount_dimensions(self):
-        if abs(self.display_angle_deg-90)>1e-6:
-            raise ValueError('Display mounting rails must remain vertical')
-        if self.mount_rail_center_spacing_mm<=0 or self.support_arm_center_spacing_mm<=0:
-            raise ValueError('Nonpositive rail/support spacing')
-        overlap=(self.mount_rail_width_mm+self.arm_thickness_mm
-                 -abs(self.support_arm_center_spacing_mm-self.mount_rail_center_spacing_mm))/2
-        if overlap<self.min_rail_arm_overlap_mm:
-            raise ValueError('Mounting rails disconnected from support arms')
-        lo,hi=self.mounting_stations_s_mm
-        if not (0<self.mount_rail_lower_station_s_mm<lo<hi<
-                self.mount_rail_upper_station_s_mm<=self.display_height_along_slope_mm):
-            raise ValueError('Vertical mounting rail does not enclose both screw stations')
+        """M3 centers are constrained inside the actual structural arms."""
+        if abs(self.display_angle_deg-90)>1e-6: raise ValueError('Display face must be vertical')
+        if self.mount_hole_center_spacing_mm<=0 or self.support_arm_center_spacing_mm<=0:
+            raise ValueError('Invalid symmetric X spacing')
+        offset=abs(self.mount_hole_center_spacing_mm-self.support_arm_center_spacing_mm)/2
+        radial=(self.arm_thickness_mm-self.board_driver_access_d_mm)/2-offset
+        if radial<self.min_screw_head_radial_wall_mm:
+            raise ValueError('M3 driver passage exits the structural arm')
+        if self.board_driver_access_d_mm<self.board_screw_head_access_d_mm:
+            raise ValueError('Rear passage cannot admit M3 screw head')
         if self.board_screw_head_access_d_mm<self.board_screw_head_diameter_mm+self.head_pocket_diametral_clearance_mm:
-            raise ValueError('M3 head pocket diameter below required clearance')
-        if self.board_screw_head_access_d_mm+2*self.min_screw_head_radial_wall_mm>self.mount_rail_width_mm:
-            raise ValueError('M3 head pocket radial wall is too thin')
-        if self.mount_rail_thickness_mm-self.board_counterbore_depth_mm<self.min_screw_head_floor_mm:
-            raise ValueError('M3 pocket floor wall is too thin')
+            raise ValueError('M3 head has insufficient diametral clearance')
+        if self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm<self.min_screw_head_floor_mm:
+            raise ValueError('M3 head bearing floor too thin')
         if self.board_counterbore_depth_mm<self.board_screw_head_height_mm:
-            raise ValueError('M3 head protrudes beyond recessed pocket')
+            raise ValueError('M3 head pocket cannot accept screw head')
         if self.board_screw_clearance_d_mm>=self.board_screw_head_diameter_mm:
-            raise ValueError('M3 clearance bore exceeds screw head diameter')
-        return overlap
+            raise ValueError('M3 bore exceeds head diameter')
+        lo,hi=self.mounting_stations_s_mm
+        if not (0<lo<hi<self.display_height_along_slope_mm):
+            raise ValueError('Mount holes outside vertical arm region')
+        for side in (-1,1):
+            service=self.cfg['service_left' if side<0 else 'service_right']
+            limit=service['throat_width_mm']/2+self.board_driver_access_d_mm/2+self.min_service_hole_gap_mm
+            for st in (lo,hi):
+                if abs(self.path_point(st)[1]-service['throat_center_z_mm'])<limit:
+                    raise ValueError('Service notch clips screw bearing material')
+        return radial
 
     @property
     def theta(self):
@@ -295,86 +300,53 @@ class Design:
         return cavity.fuse(throat).clean()
 
     def arm(self,side):
-        if side not in (-1,1):
-            raise ValueError('side must be +/-1')
+        """The sculpted arm itself carries M3 seats and rear driver passages.
+
+        No separate rail/plate/pad is constructed. Four heads sit inside the
+        arm thickness against a floor; only Ø3.4 passes through to the PCB.
+        """
+        if side not in (-1,1): raise ValueError('Invalid side')
+        center=side*self.support_arm_center_spacing_mm/2
+        mx=self.mounting_x_centers_mm[0 if side<0 else 1]
         arm=self.rib_workplane().extrude(self.arm_thickness_mm).val()
         arm=arm.cut(self.arm_service_opening(side)).clean()
-        center=side*self.support_arm_center_spacing_mm/2
         arm=arm.translate((center-self.arm_thickness_mm/2,0,0))
-        return check_solid(('left' if side<0 else 'right')+'_arm',arm)
+        face_y=self.arm_front_y_mm+self.arm_top_land_mm
+        floor=self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm
+        for station in self.mounting_stations_s_mm:
+            z=self.path_point(station)[1]
+            boss=cyl(self.display_standoff_diameter_mm/2,self.display_standoff_height_mm,
+                     (mx,face_y,z),(0,-1,0))
+            arm=arm.fuse(boss)
+            bore=cyl(self.board_screw_clearance_d_mm/2,
+                     floor+self.display_standoff_height_mm+2,
+                     (mx,face_y-self.display_standoff_height_mm-1,z),(0,1,0))
+            seat=cyl(self.board_screw_head_access_d_mm/2,self.board_counterbore_depth_mm+.02,
+                     (mx,face_y+floor-.01,z),(0,1,0))
+            driver=cyl(self.board_driver_access_d_mm/2,self.board_driver_access_length_mm,
+                       (mx,face_y+self.mount_pad_axial_thickness_mm,z),(0,1,0))
+            arm=arm.cut(bore).cut(seat).cut(driver)
+        return check_solid(('left' if side<0 else 'right')+'_integral_arm',arm.clean())
 
     def port_service_envelope(self,side):
-        """Nominal SD/USB insertion corridor. Real hardware is not measured."""
-        width=self.mount_rail_width_mm
-        center=self.mounting_x_centers_mm[0 if side<0 else -1]
+        """Nominal side-specific open-front SD/USB corridor, not a PCB scan."""
+        if side not in (-1,1): raise ValueError('Invalid service side')
         relief=self.cfg['sd_relief' if side<0 else 'usb_relief']
-        inner=center-side*width/2
-        # 0.5 mm margin inside the actual rail cut, including x tolerance.
-        x0=min(inner,inner+side*relief['inner_cut_width_mm'])+.5
-        x1=max(inner,inner+side*relief['inner_cut_width_mm'])-.5
-        z0=self.arm_front_z_mm+relief['station_mm']-relief['length_mm']/2+.5
-        return block(x0,-3,z0,x1-x0,16,relief['length_mm']-1)
-
-    def carrier_rails(self):
-        """Two independent vertically constrained rails with M3 head-pocket walls."""
-        self.validate_mount_dimensions()
-        plane=self.plate_plane()
-        width=self.mount_rail_width_mm
-        t=self.mount_rail_thickness_mm
-        lo=self.mount_rail_lower_station_s_mm
-        hi=self.mount_rail_upper_station_s_mm
-        rails=[]
-        for x in self.mounting_x_centers_mm:
-            side=-1 if x<0 else 1
-            rail=(cq.Workplane(plane).center(x,(lo+hi)/2)
-                  .rect(width,hi-lo).extrude(-t).val())
-            relief=self.cfg['sd_relief' if side<0 else 'usb_relief']
-            if relief['enabled']:
-                ligament=width-relief['inner_cut_width_mm']-relief['overhang_mm']/2
-                if ligament<self.min_mount_rail_ligament_mm:
-                    raise ValueError('Port relief leaves insufficient rail spine')
-                inner=x-side*width/2
-                cut_center=inner+side*relief['inner_cut_width_mm']/2
-                cut=(cq.Workplane(plane).center(cut_center,relief['station_mm'])
-                     .rect(relief['inner_cut_width_mm']+relief['overhang_mm'],
-                           relief['length_mm']).extrude(-t-1).val())
-                rail=rail.cut(cut)
-            for station in self.mounting_stations_s_mm:
-                boss=(cq.Workplane(plane).center(x,station)
-                      .circle(self.display_standoff_diameter_mm/2)
-                      .extrude(self.display_standoff_height_mm).val())
-                rail=rail.fuse(boss)
-            for station in self.mounting_stations_s_mm:
-                bore=(cq.Workplane(plane).center(x,station)
-                      .circle(self.board_screw_clearance_d_mm/2).extrude(-t-1).val())
-                forward=(cq.Workplane(plane).center(x,station)
-                         .circle(self.board_screw_clearance_d_mm/2)
-                         .extrude(self.display_standoff_height_mm+1).val())
-                cb=(cq.Workplane(plane).workplane(offset=-t-.005)
-                    .center(x,station).circle(self.board_screw_head_access_d_mm/2)
-                    .extrude(self.board_counterbore_depth_mm+.005).val())
-                rail=rail.cut(bore).cut(forward).cut(cb)
-            rails.append(check_solid(('left' if side<0 else 'right')+'_mount_rail',rail.clean()))
-        return rails
-
-    def carrier(self):
-        """Reference compound: exactly two rails, physically fused into main."""
-        return cq.Compound.makeCompound(self.carrier_rails())
+        x=side*self.support_arm_center_spacing_mm/2
+        width=relief['inner_cut_width_mm']
+        length=relief['length_mm']
+        return block(x-width/2,-3,relief['station_mm']-length/2,width,25,length)
 
     def integrated_support(self):
-        # One rigid printable body: saddle + left/right triangular arms + carrier.
-        # The display interface is integrated: service screws remain rear-accessible.
-        clamp = self.upper_clamp()
-        la,ra = self.arm(-1),self.arm(1)
-        # Rear cross-tie at frame foot, leaving center open for PCB screwdriver access.
+        """One printable support: keyed clamp + TWO arm-integrated M3 mounts."""
+        self.validate_mount_dimensions()
+        clamp=self.upper_clamp()
+        la,ra=self.arm(-1),self.arm(1)
         tie_y=self.arm_outer_lower_rear_y_mm-9
-        cross = block(-self.support_arm_center_spacing_mm/2-self.arm_thickness_mm/2,
-                      tie_y,self.bridge_top,
-                      self.support_arm_center_spacing_mm+self.arm_thickness_mm,8,9)
-        frame=union(clamp,la,ra,cross)
-        carr=self.carrier()
-        full=union(frame,*self.carrier_rails())
-        return check_solid('integrated_main_frame',full)
+        cross=block(-self.support_arm_center_spacing_mm/2-self.arm_thickness_mm/2,
+                    tie_y,self.bridge_top,
+                    self.support_arm_center_spacing_mm+self.arm_thickness_mm,8,9)
+        return check_solid('integrated_main_frame',union(clamp,la,ra,cross))
 
     def screen_reference(self):
         # ONLY nominal envelope, not the actual display geometry.
@@ -387,18 +359,14 @@ class Design:
             self.normal[1]*(self.display_standoff_height_mm+.75))).val()
 
     def boardscrews(self):
-        """Parametric M3 screw references with 6–8 mm nominal length option."""
-        n=(0,self.normal[0],self.normal[1])
+        """M3 reference fasteners inside structural-arm counterbores."""
         result=[]
+        seat_y=self.arm_front_y_mm+self.arm_top_land_mm+self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm
         for x in self.mounting_x_centers_mm:
             for station in self.mounting_stations_s_mm:
-                y,z=self.path_point(station,-self.mount_rail_thickness_mm+
-                                    self.board_counterbore_depth_mm)
-                shaft=cyl(self.board_screw_nominal_diameter_mm/2,
-                          self.board_screw_length_reference_mm,(x,y,z),n)
-                yb,zb=self.path_point(station,-self.mount_rail_thickness_mm)
-                head=cyl(self.board_screw_head_diameter_mm/2,
-                         self.board_screw_head_height_mm,(x,yb,zb),n)
+                z=self.path_point(station)[1]
+                shaft=cyl(self.board_screw_nominal_diameter_mm/2,self.board_screw_length_reference_mm,(x,seat_y,z),(0,-1,0))
+                head=cyl(self.board_screw_head_diameter_mm/2,self.board_screw_head_height_mm,(x,seat_y,z),(0,1,0))
                 result.append(union(shaft,head))
         return result
 
@@ -424,13 +392,9 @@ class Design:
             'parameters_provisional': True,
             'verification_scope': 'nominal CAD solids and reference clearances only; not physically fitted'
         }
-        for key in ['rail','upper_saddle','keeper','left_arm','right_arm','carrier','main']:
+        for key in ['rail','upper_saddle','keeper','left_arm','right_arm','main']:
             s=parts[key]
-            if key=='carrier':
-                if len(s.Solids())!=2 or any(not body.isValid() for body in s.Solids()):
-                    raise ValueError('Carrier must be two separate valid mounting rails')
-            else:
-                check_solid(key,s)
+            check_solid(key,s)
             report[f'{key}_volume_mm3']=round(s.Volume(),2)
         # Solid-to-solid interference, not clearance envelope or actual surface fit.
         tests={'main_vs_rail': (main,rail), 'keeper_vs_rail': (keeper,rail),
@@ -473,23 +437,22 @@ class Design:
             report['top_slot_key_rail_overlap_mm3']=round(kv,5)
             if kv>.01:
                 raise ValueError(f'Top locating key hits rail: {kv} mm3')
-        # Check all through-holes have a clear straight tool path to rear.
-        # The first few mm of each ray are outside the carrier rear face.
-        n=self.normal
+        # Test uninterrupted access from rear through the integral arm to M3 head.
+        face=self.arm_front_y_mm+self.arm_top_land_mm
         for x in self.mounting_x_centers_mm:
-            for s in self.mounting_stations_s_mm:
-                y,z=self.path_point(s,-self.mount_rail_thickness_mm-2.5)
-                rad=self.rear_access_tool_diameter_mm/2
-                tool=cyl(rad,55,(x,y-55*n[0],z-55*n[1]),(0,n[0],n[1]))
+            for station in self.mounting_stations_s_mm:
+                z=self.path_point(station)[1]
+                tool=cyl(self.rear_access_tool_diameter_mm/2,self.board_driver_access_length_mm-.2,
+                         (x,face+self.mount_pad_axial_thickness_mm+.1,z),(0,1,0))
                 vol=tool.intersect(main).Volume()
-                report[f'rear_tool_clearance_x{x:g}_s{s:g}_mm3']=round(vol,5)
+                report[f'rear_tool_clearance_x{x:g}_s{station:g}_mm3']=round(vol,5)
                 if vol>.03:
-                    raise ValueError(f'Screwdriver blocked at x={x}, s={s}: {vol} mm3')
+                    raise ValueError(f'Blocked rear driver at X={x}, S={station}: {vol} mm3')
         # Verify actual 3D service corridors remain free of bracket solids.
         for side,label in [(-1,'sd'),(1,'usb')]:
             branch=self.cfg['service_left' if side<0 else 'service_right']
             center=side*self.support_arm_center_spacing_mm/2
-            # The V008 path enters from Y<0 at the display side, not from
+            # The V009 path enters from Y<0 at the display side, not from
             # the exterior rear slope. Check the actual front opening up to Y=23.
             probe=block(center-1,branch['throat_start_y_mm']+2,
                         branch['throat_center_z_mm']-1,2,
@@ -502,15 +465,16 @@ class Design:
             report[f'{label}_throat_width_mm']=branch['throat_width_mm']
             if overlap>.01:
                 raise ValueError(f'{label} port/cable provisional service volume obstructed: {overlap}')
-        report['mount_rail_center_spacing_mm']=self.mount_rail_center_spacing_mm
+        report['mount_hole_center_spacing_mm']=self.mount_hole_center_spacing_mm
         report['support_arm_center_spacing_mm']=self.support_arm_center_spacing_mm
-        report['mount_rail_vertical_extent_s_mm']=[self.mount_rail_lower_station_s_mm,self.mount_rail_upper_station_s_mm]
-        report['m3_pocket_floor_wall_mm']=round(self.mount_rail_thickness_mm-self.board_counterbore_depth_mm,4)
-        report['m3_pocket_radial_wall_mm']=round((self.mount_rail_width_mm-self.board_screw_head_access_d_mm)/2,4)
+        report['integral_arm_mount_stations_s_mm']=list(self.mounting_stations_s_mm)
+        report['m3_pocket_floor_wall_mm']=round(self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm,4)
+        report['m3_pocket_radial_wall_mm']=round(self.validate_mount_dimensions(),4)
         report['service_front_opening_yz_target_mm']=[0,20,60,80]
-        report['carrier_rail_count']=len(parts['carrier'].Solids())
+        report['detached_carrier_count']=0
+        report['integral_arm_m3_holes']=4
         report['rear_sheet_removed']=True
-        report['status']='PASS: two open mounting rails, rear service branches, zero solid overlaps'
+        report['status']='PASS: one integral frame with four M3 rear-access seats; no detached carrier'
         return report
 
 
@@ -552,14 +516,14 @@ def render_views(parts, output):
 
     palette={'rail':(.64,.67,.70),'main':(.39,.44,.51),'keeper':(.90,.44,.14),
              'screen':(.05,.45,.61),'m4':(.86,.88,.91),'m25':(.95,.77,.23),
-             'carrier':(.18,.45,.67),'upper_saddle':(.35,.38,.43),
+             'upper_saddle':(.35,.38,.43),
              'left_arm':(.90,.44,.14),'right_arm':(.90,.44,.14)}
     scenes={
       'assembly_isometric': [('rail',1.0),('main',1.0),('keeper',1.0),('screen',0.42),('m4',1.0),('m25',1.0)],
       'main_frame_only': [('main',1.0)],
       'side_section': [('rail',.3),('main',1.0),('keeper',1.0),('screen',0.4)],
       'saddle_clamp': [('rail',.35),('upper_saddle',1.0),('keeper',1.0)],
-      'display_carrier': [('carrier',1.0),('m25',1.0)],
+      'integrated_display_mount': [('main',1.0),('m25',1.0)],
       'rear_screw_access': [('rail',.35),('main',1.0),('keeper',1.0),('m4',1.0),('m25',1.0)],
     }
     saved=[]
@@ -579,7 +543,7 @@ def render_views(parts, output):
         elif name=='side_section':
             camera.SetPosition(450,-260,160);camera.SetFocalPoint(0,9,48)
             # view mostly along +X side, slightly perspective for paired arms
-        elif name=='display_carrier':
+        elif name=='integrated_display_mount':
             camera.SetPosition(220,-180,230);camera.SetFocalPoint(0,0,70)
         elif name=='saddle_clamp':
             camera.SetPosition(160,-180,110);camera.SetFocalPoint(0,0,0)
@@ -692,7 +656,7 @@ def render_engineering_side_profile(d, output):
                     xytext=(-103,6 if station==d.mounting_stations_s_mm[0] else 12),
                     textcoords='offset points',fontsize=8,color='#854d0e',
                     arrowprops=dict(arrowstyle='-',color='#a16207',lw=.7))
-    ax.annotate('Display carrier + 2 arms\n'+str(d.display_angle_deg)+'° to saddle bearing face',
+    ax.annotate('Structural arms / M3 integral mounts\n'+str(d.display_angle_deg)+'° to saddle bearing face',
                 xy=p1,xytext=(-51,122),fontsize=10,weight='bold',color='#0369a1',
                 arrowprops=dict(arrowstyle='->',lw=1.3,color='#0369a1'))
     ax.annotate('Removable M4 keeper',xy=(0,d.lower_keeper_top_z_mm-3),
@@ -708,7 +672,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V008 SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V009 INTEGRAL-ARM SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -724,11 +688,11 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     for sub in ['step','stl','previews','docs']:(out/sub).mkdir(parents=True,exist_ok=True)
     parts={'rail':d.rail(rail_path),'upper_saddle':d.upper_clamp(),
            'keeper':d.keeper(),'left_arm':d.arm(-1),'right_arm':d.arm(1),
-           'carrier':d.carrier(),'main':d.integrated_support(),
+           'main':d.integrated_support(),
            'screen':d.screen_reference(),
            'board_screws':d.boardscrews(), 'clamp_screws':d.clampscrews()}
     report=d.validate(parts)
-    for name in ['rail','upper_saddle','keeper','left_arm','right_arm','carrier','main','screen']:
+    for name in ['rail','upper_saddle','keeper','left_arm','right_arm','main','screen']:
         export_step(parts[name],out/'step'/f'{name}.step')
         if name not in ('rail','screen'):
             export_stl(parts[name],out/'stl'/f'{name}.stl')
@@ -740,10 +704,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V008.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V009.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V008.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V009.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')
