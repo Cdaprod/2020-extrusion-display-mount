@@ -45,10 +45,10 @@
   "rail_volume_mm3": 33082.04,
   "upper_saddle_volume_mm3": 70060.79,
   "keeper_volume_mm3": 26560.09,
-  "left_arm_volume_mm3": 37104.49,
-  "right_arm_volume_mm3": 37104.49,
-  "carrier_volume_mm3": 56092.78,
-  "main_volume_mm3": 200929.13,
+  "left_arm_volume_mm3": 34532.68,
+  "right_arm_volume_mm3": 33889.89,
+  "carrier_volume_mm3": 20001.52,
+  "main_volume_mm3": 160171.48,
   "main_vs_rail_overlap_mm3": 0.0,
   "keeper_vs_rail_overlap_mm3": 0.0,
   "main_vs_keeper_overlap_mm3": 0.0,
@@ -67,10 +67,16 @@
   "rear_tool_clearance_x-28_s61_mm3": 0.0,
   "rear_tool_clearance_x28_s30_mm3": 0.0,
   "rear_tool_clearance_x28_s61_mm3": 0.0,
-  "status": "PASS: nominal geometry, zero body collisions, rear tools unobstructed",
+  "sd_service_envelope_overlap_mm3": 0.0,
+  "sd_throat_width_mm": 13,
+  "usb_service_envelope_overlap_mm3": 0.0,
+  "usb_throat_width_mm": 17,
+  "carrier_rail_count": 2,
+  "rear_sheet_removed": true,
+  "status": "PASS: two open mounting rails, rear service branches, zero solid overlaps",
   "rail_reference_sha256": "978f92d68d8ce3ca31434f931257e2c80632c417ef78b4b6f0189b26e5b4c9f0",
   "design_config": {
-    "release": "V006",
+    "release": "V007",
     "units": "mm",
     "rail_reference_length_mm": 120,
     "rail_nominal_size_mm": 20,
@@ -124,7 +130,7 @@
     "display_side_window_length_mm": 48,
     "rear_access_tool_diameter_mm": 6,
     "nominal_display_reference_thickness_mm": 5,
-    "provenance": "V006 fixes missing external rear gusset; external profile descends from saddle rear wall and rises diagonally into support. V005 hidden interior gusset replaced. User IMG_9098.",
+    "provenance": "V007: two open-back vertical PCB mounting rails, integrated M2.5 bores and rear head pockets, rear-open U/Y support service cutouts, independently adjustable SD/USB port clearance reliefs. Source rail, keyed saddle and M4 keeper preserved. Port dimensions and positions provisional; actual hardware not measured.",
     "require_perpendicular_display": true,
     "require_display_centering": true,
     "arm_outer_rear_shoulder_y_mm": 16,
@@ -152,6 +158,38 @@
     "arm_opening_front_wall_mm": 16,
     "arm_opening_rear_bottom_y_mm": 40,
     "arm_opening_rear_top_y_mm": 30,
-    "arm_opening_corner_radius_mm": 5
+    "arm_opening_corner_radius_mm": 5,
+    "mount_rail_width_mm": 22,
+    "mount_rail_thickness_mm": 6,
+    "min_mount_rail_ligament_mm": 8,
+    "min_arm_front_ligament_mm": 12,
+    "service_left": {
+      "throat_center_z_mm": 71,
+      "throat_width_mm": 13,
+      "throat_end_y_mm": 90,
+      "fillet_mm": 3
+    },
+    "service_right": {
+      "throat_center_z_mm": 75,
+      "throat_width_mm": 17,
+      "throat_end_y_mm": 90,
+      "fillet_mm": 3
+    },
+    "sd_relief": {
+      "enabled": true,
+      "side": "left",
+      "station_mm": 44,
+      "length_mm": 12,
+      "inner_cut_width_mm": 11,
+      "overhang_mm": 1.5
+    },
+    "usb_relief": {
+      "enabled": true,
+      "side": "right",
+      "station_mm": 44,
+      "length_mm": 16,
+      "inner_cut_width_mm": 11,
+      "overhang_mm": 1.5
+    }
   }
 }
