@@ -1,5 +1,5 @@
 {
-  "release": "V004",
+  "release": "V005",
   "units": "mm",
   "rail_reference_length_mm": 120,
   "rail_nominal_size_mm": 20,
@@ -53,7 +53,7 @@
   "display_side_window_length_mm": 48,
   "rear_access_tool_diameter_mm": 6,
   "nominal_display_reference_thickness_mm": 5,
-  "provenance": "V004 user markup IMG_9092 and final compact silhouette IMG_9095: saddle-front datum flush, rear taper shortened, exact tangent arcs at top/rear/lower corners; display and rail interfaces retained.",
+  "provenance": "V005 user IMG_9096: add load-bearing triangular rear saddle gusset beneath V004 horizontal foot; move opening toward carrier and reshape as a rounded tapered trapezoid with rear edge tracking outer support slope.",
   "require_perpendicular_display": true,
   "require_display_centering": true,
   "arm_outer_rear_shoulder_y_mm": 16,
@@ -73,5 +73,13 @@
   "arm_top_land_mm": 2,
   "arm_lower_rear_fillet_mm": 5,
   "arm_rear_transition_fillet_mm": 6,
-  "arm_upper_shoulder_fillet_mm": 7
+  "arm_upper_shoulder_fillet_mm": 7,
+  "arm_gusset_saddle_overlap_mm": 0.8,
+  "arm_gusset_bottom_relief_mm": 0.6,
+  "arm_opening_bottom_z_mm": 44,
+  "arm_opening_top_z_mm": 96,
+  "arm_opening_front_wall_mm": 16,
+  "arm_opening_rear_bottom_y_mm": 40,
+  "arm_opening_rear_top_y_mm": 30,
+  "arm_opening_corner_radius_mm": 5
 }
