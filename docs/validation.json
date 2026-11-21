@@ -6,20 +6,20 @@
   ],
   "nominal_display_hole_centers_x_s_mm": [
     [
-      -28,
-      30
+      -28.0,
+      30.0
     ],
     [
-      -28,
-      61
+      -28.0,
+      61.0
     ],
     [
-      28,
-      30
+      28.0,
+      30.0
     ],
     [
-      28,
-      61
+      28.0,
+      61.0
     ]
   ],
   "clamp_fastener_centers_xy_mm": [
@@ -45,10 +45,10 @@
   "rail_volume_mm3": 33082.04,
   "upper_saddle_volume_mm3": 70060.79,
   "keeper_volume_mm3": 26560.09,
-  "left_arm_volume_mm3": 34532.68,
-  "right_arm_volume_mm3": 33889.89,
-  "carrier_volume_mm3": 20001.52,
-  "main_volume_mm3": 160171.48,
+  "left_arm_volume_mm3": 33167.38,
+  "right_arm_volume_mm3": 32761.9,
+  "carrier_volume_mm3": 12417.18,
+  "main_volume_mm3": 151570.54,
   "main_vs_rail_overlap_mm3": 0.0,
   "keeper_vs_rail_overlap_mm3": 0.0,
   "main_vs_keeper_overlap_mm3": 0.0,
@@ -68,15 +68,29 @@
   "rear_tool_clearance_x28_s30_mm3": 0.0,
   "rear_tool_clearance_x28_s61_mm3": 0.0,
   "sd_service_envelope_overlap_mm3": 0.0,
-  "sd_throat_width_mm": 13,
+  "sd_throat_width_mm": 15,
   "usb_service_envelope_overlap_mm3": 0.0,
   "usb_throat_width_mm": 17,
+  "mount_rail_center_spacing_mm": 56,
+  "support_arm_center_spacing_mm": 78,
+  "mount_rail_vertical_extent_s_mm": [
+    15,
+    74
+  ],
+  "m3_pocket_floor_wall_mm": 3.2,
+  "m3_pocket_radial_wall_mm": 6.8,
+  "service_front_opening_yz_target_mm": [
+    0,
+    20,
+    60,
+    80
+  ],
   "carrier_rail_count": 2,
   "rear_sheet_removed": true,
   "status": "PASS: two open mounting rails, rear service branches, zero solid overlaps",
   "rail_reference_sha256": "978f92d68d8ce3ca31434f931257e2c80632c417ef78b4b6f0189b26e5b4c9f0",
   "design_config": {
-    "release": "V007",
+    "release": "V008",
     "units": "mm",
     "rail_reference_length_mm": 120,
     "rail_nominal_size_mm": 20,
@@ -99,7 +113,6 @@
     "top_slot_key_enabled": true,
     "top_slot_key_width_mm": 5.6,
     "top_slot_key_projection_mm": 0.9,
-    "arm_spacing_mm": 78,
     "arm_thickness_mm": 8,
     "arm_outline_fillet_mm": 0,
     "arm_front_y_mm": 0,
@@ -110,34 +123,26 @@
     "display_width_mm": 176,
     "display_height_along_slope_mm": 80,
     "display_plate_thickness_mm": 4,
-    "display_standoff_height_mm": 5,
+    "display_standoff_height_mm": 1.5,
     "display_standoff_diameter_mm": 9,
-    "board_hole_x_mm": [
-      -28,
-      28
-    ],
-    "board_hole_s_mm": [
-      30,
-      61
-    ],
-    "board_screw_clearance_d_mm": 2.8,
-    "board_screw_head_access_d_mm": 5.8,
-    "board_counterbore_depth_mm": 1.8,
-    "board_screw_nominal": "M2.5 x 10 candidate, 4 pcs; actual PCB hole/thread and length unverified",
+    "board_screw_clearance_d_mm": 3.4,
+    "board_screw_head_access_d_mm": 6.4,
+    "board_counterbore_depth_mm": 3,
+    "board_screw_nominal": "M3 x 6\u20138 mm candidate; recessed head pocket \u00d86.4 mm; physical head geometry, PCB threads and engagement unverified",
     "display_central_window_width_mm": 20,
     "display_central_window_length_mm": 25,
     "display_side_window_width_mm": 28,
     "display_side_window_length_mm": 48,
-    "rear_access_tool_diameter_mm": 6,
+    "rear_access_tool_diameter_mm": 4.2,
     "nominal_display_reference_thickness_mm": 5,
-    "provenance": "V007: two open-back vertical PCB mounting rails, integrated M2.5 bores and rear head pockets, rear-open U/Y support service cutouts, independently adjustable SD/USB port clearance reliefs. Source rail, keyed saddle and M4 keeper preserved. Port dimensions and positions provisional; actual hardware not measured.",
+    "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured.",
     "require_perpendicular_display": true,
     "require_display_centering": true,
     "arm_outer_rear_shoulder_y_mm": 16,
     "arm_outer_rear_shoulder_z_above_carrier_mm": 16,
-    "arm_outer_rear_bulge_y_mm": 61,
+    "arm_outer_rear_bulge_y_mm": 58,
     "arm_outer_rear_bulge_z_mm": 72,
-    "arm_outer_lower_rear_y_mm": 49,
+    "arm_outer_lower_rear_y_mm": 47,
     "arm_front_toe_y_mm": -21,
     "arm_curve_radius_mm": 5,
     "arm_service_slot_center_y_mm": 31.5,
@@ -159,20 +164,22 @@
     "arm_opening_rear_bottom_y_mm": 40,
     "arm_opening_rear_top_y_mm": 30,
     "arm_opening_corner_radius_mm": 5,
-    "mount_rail_width_mm": 22,
-    "mount_rail_thickness_mm": 6,
+    "mount_rail_width_mm": 20,
+    "mount_rail_thickness_mm": 6.2,
     "min_mount_rail_ligament_mm": 8,
     "min_arm_front_ligament_mm": 12,
     "service_left": {
-      "throat_center_z_mm": 71,
-      "throat_width_mm": 13,
-      "throat_end_y_mm": 90,
+      "throat_center_z_mm": 70,
+      "throat_width_mm": 15,
+      "throat_start_y_mm": -5,
+      "throat_end_y_mm": 31,
       "fillet_mm": 3
     },
     "service_right": {
-      "throat_center_z_mm": 75,
+      "throat_center_z_mm": 72,
       "throat_width_mm": 17,
-      "throat_end_y_mm": 90,
+      "throat_start_y_mm": -5,
+      "throat_end_y_mm": 31,
       "fillet_mm": 3
     },
     "sd_relief": {
@@ -190,6 +197,20 @@
       "length_mm": 16,
       "inner_cut_width_mm": 11,
       "overhang_mm": 1.5
-    }
+    },
+    "support_arm_center_spacing_mm": 78,
+    "mount_rail_center_spacing_mm": 56,
+    "board_screw_station_center_mm": 45.5,
+    "board_screw_vertical_pitch_mm": 31,
+    "mount_rail_lower_station_s_mm": 15,
+    "mount_rail_upper_station_s_mm": 74,
+    "min_rail_arm_overlap_mm": 2.5,
+    "min_screw_head_floor_mm": 3,
+    "min_screw_head_radial_wall_mm": 2.5,
+    "board_screw_nominal_diameter_mm": 3,
+    "board_screw_head_diameter_mm": 5.6,
+    "board_screw_head_height_mm": 2.9,
+    "head_pocket_diametral_clearance_mm": 0.6,
+    "board_screw_length_reference_mm": 7
   }
 }
