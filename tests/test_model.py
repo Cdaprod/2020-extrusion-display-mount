@@ -104,6 +104,7 @@ class ModelTests(unittest.TestCase):
         p=self.d.adaptive_profile
         self.assertGreater(p['roof_web_z'],self.d.screw_support_radius_mm)
         self.assertGreaterEqual(p['outer_bulge_z'],self.d.arm_outer_rear_bulge_z_mm)
+        self.assertGreaterEqual(p['top_slope_rear_web_y'],self.d.opening_rear_web_mm)
 
     def test_v011_manufacturing_and_preview_outputs(self):
         for name in ('main.step','left_arm.step','right_arm.step',

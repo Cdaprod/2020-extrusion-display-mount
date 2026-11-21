@@ -97,22 +97,24 @@ class Design:
             raise ValueError('M3 pitch too small for radiused front service aperture')
         rear_lower=max(self.arm_opening_rear_bottom_y_mm,
                        self.arm_front_y_mm+self.arm_opening_front_wall_mm+self.opening_rear_extra_y_mm)
-        rear_upper=max(rear_lower+2,self.arm_opening_rear_top_y_mm)
+        rear_upper=max(self.arm_front_y_mm+self.arm_opening_front_wall_mm+4,
+                       min(self.arm_opening_rear_top_y_mm,rear_lower-2))
         outer_bulge_z=max(self.arm_outer_rear_bulge_z_mm,(lower+upper)/2+self.outer_rear_bulge_margin_mm)
         top=zh+self.upper_boss_cap_extra_mm
         # Side-wall rear distance at the roof must preserve a minimum ligament,
         # not merely avoid coincident boundary coordinates.
         outer_y_top=self.arm_outer_rear_shoulder_y_mm
         outer_y_bulge=self.arm_outer_rear_bulge_y_mm
-        fraction=(top-upper)/(top-outer_bulge_z)
+        fraction=(upper-outer_bulge_z)/(top-outer_bulge_z)
         if not 0<=fraction<=1:
             raise ValueError('Outer shoulder does not span service aperture roof')
-        exterior_y=outer_y_top+(outer_y_bulge-outer_y_top)*(1-fraction)
+        exterior_y=outer_y_bulge+(outer_y_top-outer_y_bulge)*fraction
         if exterior_y-rear_upper < self.opening_rear_web_mm:
             raise ValueError('Rear service aperture cuts into load-bearing sloped web')
         return dict(bottom_z=lower,top_z=upper,rear_bottom_y=rear_lower,
                     rear_top_y=rear_upper,outer_bulge_z=outer_bulge_z,
-                    screw_z=(zl,zh),support_radius=r,roof_web_z=zh-upper)
+                    screw_z=(zl,zh),support_radius=r,roof_web_z=zh-upper,
+                    top_slope_rear_web_y=exterior_y-rear_upper)
 
     def validate_mount_dimensions(self):
         """M3 centers are constrained inside the actual structural arms."""
@@ -349,10 +351,15 @@ class Design:
                 .edges('|X').fillet(self.arm_opening_corner_radius_mm)
                 .val().translate((-1,0,0)))
         branch=self.cfg['service_left' if side<0 else 'service_right']
-        center=branch['throat_center_z_mm']
         width=branch['throat_width_mm']
-        if not (center-width/2>=zlo and center+width/2<=zhi):
-            raise ValueError('Front throat must intersect main service cavity')
+        margin=self.service_throat_min_boundary_margin_mm
+        lower_limit=zlo+width/2+margin
+        upper_limit=zhi-width/2-margin
+        if lower_limit>upper_limit:
+            raise ValueError('Front service throat wider than pitch-dependent aperture')
+        center=min(max(branch['throat_center_z_mm'],lower_limit),upper_limit)
+        if not (center-width/2>=zlo+margin and center+width/2<=zhi-margin):
+            raise ValueError('Front throat must remain inside pitch-dependent service cavity')
         if not branch['throat_start_y_mm']<self.arm_front_y_mm-1:
             raise ValueError('Front throat does not clear front edge')
         if branch['throat_end_y_mm']<=front+4:
@@ -549,10 +556,16 @@ class Design:
         for side,label in [(-1,'sd'),(1,'usb')]:
             branch=self.cfg['service_left' if side<0 else 'service_right']
             center=side*self.support_arm_center_spacing_mm/2
+            profile=self.adaptive_profile
+            width=branch['throat_width_mm']
+            margin=self.service_throat_min_boundary_margin_mm
+            throat_center=min(max(branch['throat_center_z_mm'],
+                                  profile['bottom_z']+width/2+margin),
+                              profile['top_z']-width/2-margin)
             # The V010 path enters from Y<0 at the display side, not from
             # the exterior rear slope. Check the actual front opening up to Y=23.
             probe=block(center-1,branch['throat_start_y_mm']+2,
-                        branch['throat_center_z_mm']-1,2,
+                        throat_center-1,2,
                         self.arm_opening_front_wall_mm+8,2)
             if parts['left_arm' if side<0 else 'right_arm'].intersect(probe).Volume()>.01:
                 raise ValueError(f'{label}: side-entry throat is blocked')
@@ -560,6 +573,7 @@ class Design:
             overlap=main.intersect(corridor).Volume()
             report[f'{label}_service_envelope_overlap_mm3']=round(overlap,5)
             report[f'{label}_throat_width_mm']=branch['throat_width_mm']
+            report[f'{label}_adaptive_throat_center_z_mm']=throat_center
             if overlap>.01:
                 raise ValueError(f'{label} port/cable provisional service volume obstructed: {overlap}')
         report['mount_hole_center_spacing_mm']=self.mount_hole_center_spacing_mm

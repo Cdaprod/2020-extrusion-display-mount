@@ -12,6 +12,9 @@ V011 fixes the key failure in V010: the M3 screw pitch could change while the se
 
 The side aperture is constrained by the Ø7 rear driver passage plus a configurable **4 mm nominal minimum support web**, an additional 2 mm transition allowance, and the corner radius. When a fastener station changes, the opening and upper arm height follow it; when the requested pitch is infeasible, generation fails rather than silently creating unsupported M3 tabs.
 
+
+The front SD/USB throat center is now *clamped to the adaptive opening interval*, retaining the original nominal center when geometrically feasible. The upper rear web is computed by interpolation between the actual outer shoulder and bulge rather than by extrapolation. The tapered cavity roof is not expanded into the rear load-bearing diagonal. The default opening offsets are 11/12 mm respectively.
+
 Actual board spacing, SD/USB port geometry and load paths still require physical measurement. The new checks are nominal BREP geometry constraints, not printed strength certification.
 
 See [V011 structural dependency design](docs/V011_SUPPORT_DEPENDENCIES.md).

@@ -129,10 +129,11 @@
   "keeper_corner_fillet_mm": 1,
   "min_screw_envelope_web_mm": 4,
   "opening_transition_clearance_mm": 2,
-  "opening_lower_offset_from_screw_mm": 13,
-  "opening_upper_offset_from_screw_mm": 13,
+  "opening_lower_offset_from_screw_mm": 11,
+  "opening_upper_offset_from_screw_mm": 12,
   "opening_rear_web_mm": 8,
   "opening_rear_extra_y_mm": 9,
   "outer_rear_bulge_margin_mm": 10,
-  "support_profile_adaptive": true
+  "support_profile_adaptive": true,
+  "service_throat_min_boundary_margin_mm": 1
 }
