@@ -1,4 +1,4 @@
-"""V008 targeted tests for front-opening and independent M3 mounting rail parameters."""
+"""V009 targeted tests for front-opening and independent M3 mounting rail parameters."""
 import json,sys,unittest
 from pathlib import Path
 import cadquery as cq
@@ -16,7 +16,7 @@ class ModelTests(unittest.TestCase):
 
     def test_independent_centered_vertical_rail_and_arm_pitch(self):
         d=self.d
-        self.assertEqual(self.cfg['release'],'V008')
+        self.assertEqual(self.cfg['release'],'V009')
         self.assertNotEqual(d.mount_rail_center_spacing_mm,d.support_arm_center_spacing_mm)
         self.assertEqual(d.mounting_x_centers_mm,(-28,28))
         self.assertEqual(d.mounting_stations_s_mm,(30,61))
@@ -55,8 +55,8 @@ class ModelTests(unittest.TestCase):
             self.assertLess(r[key],.01)
         self.assertEqual(len([k for k in r if k.startswith('rear_tool_clearance_')]),4)
 
-    def test_v008_exports_are_committed(self):
-        for name in ('COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V008.step','PRINTABLE_PARTS_V008.step',
+    def test_v009_exports_are_committed(self):
+        for name in ('COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V009.step','PRINTABLE_PARTS_V009.step',
                      'M3_DISPLAY_SCREWS_REFERENCE.step'):
             self.assertTrue((ROOT/'step'/name).exists())
         for name in ('main.step','carrier.step'):
