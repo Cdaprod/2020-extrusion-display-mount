@@ -53,6 +53,38 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(self.cfg['board_hole_x_mm'][1]-self.cfg['board_hole_x_mm'][0],56)
         self.assertAlmostEqual(self.cfg['board_hole_s_mm'][1]-self.cfg['board_hole_s_mm'][0],31)
 
+    def test_perpendicular_carrier_and_centered_saddle_datums(self):
+        self.assertEqual(self.cfg['release'], 'V002')
+        self.assertAlmostEqual(self.d.display_angle_deg,90.0,places=6)
+        self.assertAlmostEqual(self.d.arm_front_y_mm,0.0,places=6)
+        self.assertAlmostEqual(self.d.tangent[0],0.0,places=6)
+        self.assertAlmostEqual(self.d.normal[1],0.0,places=6)
+        railbb=self.parts['rail'].BoundingBox()
+        screenbb=self.parts['carrier'].BoundingBox()
+        self.assertAlmostEqual(railbb.xmin+railbb.xmax,0.0,places=4)
+        self.assertAlmostEqual(screenbb.xmin+screenbb.xmax,0.0,places=4)
+        y0,z0=self.d.path_point(0)
+        self.assertAlmostEqual(y0,0.0,places=5)
+        report=self.d.validate(self.parts)
+        self.assertTrue(report['carrier_perpendicular_to_saddle'])
+        self.assertTrue(report['carrier_centered_over_saddle'])
+
+    def test_alignment_constraints_reject_wrong_geometry(self):
+        wrong=dict(self.cfg);wrong['display_angle_deg']=46.0
+        with self.assertRaisesRegex(ValueError,'perpendicular'):
+            Design(wrong).validate(self.parts)
+        wrong=dict(self.cfg);wrong['arm_front_y_mm']=-33.0
+        with self.assertRaisesRegex(ValueError,'centered'):
+            Design(wrong).validate(self.parts)
+
+    def test_alignment_is_still_parametrically_editable(self):
+        changed=dict(self.cfg)
+        changed['require_perpendicular_display']=False
+        changed['require_display_centering']=False
+        changed['display_angle_deg']=85.0
+        changed['arm_front_y_mm']=3.0
+        self.assertTrue(Design(changed).carrier().isValid())
+
     def test_changes_to_configuration_update_geometry(self):
         revised=dict(self.cfg)
         revised['display_angle_deg']=self.cfg['display_angle_deg']+2
