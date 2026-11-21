@@ -54,7 +54,7 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(self.cfg['board_hole_s_mm'][1]-self.cfg['board_hole_s_mm'][0],31)
 
     def test_perpendicular_carrier_and_centered_saddle_datums(self):
-        self.assertEqual(self.cfg['release'], 'V004')
+        self.assertEqual(self.cfg['release'], 'V005')
         self.assertAlmostEqual(self.d.display_angle_deg,90.0,places=6)
         self.assertAlmostEqual(self.d.arm_front_y_mm,0.0,places=6)
         self.assertAlmostEqual(self.d.tangent[0],0.0,places=6)
@@ -115,6 +115,21 @@ class ModelTests(unittest.TestCase):
                 dot=radius[0]*direction[0]+radius[1]*direction[1]
                 self.assertAlmostEqual(dot,0,places=5)
                 self.assertAlmostEqual(math.hypot(*radius),section['radius'],places=5)
+
+    def test_v005_gusset_reaches_below_saddle_top(self):
+        g=self.d.arm_lower_gusset()
+        self.assertLess(g.BoundingBox().zmin,self.d.bridge_bottom)
+        self.assertGreater(g.BoundingBox().ymax,self.d.upper_clamp_width_mm/2)
+        self.assertTrue(g.isValid())
+
+    def test_v005_opening_is_parametric_and_forward_shifted(self):
+        aperture=self.d.arm_service_opening()
+        self.assertLess(aperture.BoundingBox().ymax,45)
+        self.assertGreater(aperture.BoundingBox().ymin,10)
+        self.assertGreater(aperture.BoundingBox().zlen,45)
+        changed=dict(self.cfg)
+        changed['arm_opening_rear_bottom_y_mm']+=2
+        self.assertGreater(Design(changed).arm_service_opening().Volume(),aperture.Volume())
 
     def test_changes_to_configuration_update_geometry(self):
         revised=dict(self.cfg)

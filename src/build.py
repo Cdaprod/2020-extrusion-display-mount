@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V004.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V005.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -222,19 +222,51 @@ class Design:
                 wire=wire.threePointArc(s['mid'],s['exit'])
         return wire.close()
 
+    def arm_service_opening(self):
+        """Rounded trapezoidal aperture; rear edge follows the outer taper.
+
+        The front wall is referenced to the carrier plane; the rear edge
+        slopes toward the front as Z rises. All four corner radii are real
+        BREP fillets, not raster approximations.
+        """
+        zlo=self.arm_opening_bottom_z_mm
+        zhi=self.arm_opening_top_z_mm
+        front=self.arm_front_y_mm+self.arm_opening_front_wall_mm
+        rearlo=self.arm_opening_rear_bottom_y_mm
+        rearhi=self.arm_opening_rear_top_y_mm
+        if not (zhi>zlo+2*self.arm_opening_corner_radius_mm and
+                rearlo>front+2*self.arm_opening_corner_radius_mm and
+                rearhi>front+2*self.arm_opening_corner_radius_mm):
+            raise ValueError('Invalid V005 opening proportions')
+        opening=(cq.Workplane('YZ')
+                 .polyline([(front,zlo),(rearlo,zlo),(rearhi,zhi),(front,zhi)])
+                 .close().extrude(self.arm_thickness_mm+2))
+        # Four edges parallel to extrusion axis produce constant-radius
+        # rounded corners in the YZ aperture profile.
+        return opening.edges('|X').fillet(self.arm_opening_corner_radius_mm).val().translate((-1,0,0))
+
+    def arm_lower_gusset(self):
+        """Fill the rear saddle-to-arm wedge without entering rail or keeper.
+
+        Rear saddle wall occupies Y=[inner_half, saddle_width/2].
+        The wedge begins just inside its back edge for a robust union.
+        """
+        y0=self.upper_clamp_width_mm/2-self.arm_gusset_saddle_overlap_mm
+        y1=self.arm_outer_lower_rear_y_mm-self.arm_lower_rear_fillet_mm
+        z0=self.upper_clamp_sidewall_bottom_z_mm+self.arm_gusset_bottom_relief_mm
+        z1=self.bridge_top-self.arm_saddle_intersection_mm+0.5
+        if y1<=self.upper_clamp_width_mm/2 or z0>=z1:
+            raise ValueError('Invalid V005 gusset bounds')
+        return (cq.Workplane('YZ')
+                .polyline([(y0,z0),(y0,z1),(y1,z1)])
+                .close().extrude(self.arm_thickness_mm).val())
+
     def arm(self, side):
         if side not in (-1,1):
             raise ValueError('side must be +/-1')
         arm=self.rib_workplane().extrude(self.arm_thickness_mm).val()
-        # Cut a true obround (vertical rounded-ended service opening) through
-        # the entire side-arm width, replacing V002's polygonal triangle.
-        opening=(cq.Workplane('YZ')
-                 .center(self.arm_service_slot_center_y_mm,self.arm_service_slot_center_z_mm)
-                 .slot2D(self.arm_service_slot_length_mm,
-                         self.arm_service_slot_width_mm,
-                         angle=self.arm_service_slot_angle_deg)
-                 .extrude(self.arm_thickness_mm+2).val().translate((-1,0,0)))
-        arm=arm.cut(opening).clean()
+        arm=arm.fuse(self.arm_lower_gusset()).clean()
+        arm=arm.cut(self.arm_service_opening()).clean()
         center=side*self.arm_spacing_mm/2
         arm=arm.translate((center-self.arm_thickness_mm/2,0,0))
         return check_solid(('left' if side<0 else 'right')+'_arm',arm)
@@ -572,7 +604,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V004 SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V005 SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -604,10 +636,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V004.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V005.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V004.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V005.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')
