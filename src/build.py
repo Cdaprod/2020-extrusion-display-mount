@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V006.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V007.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -225,82 +225,116 @@ class Design:
                 wire=wire.threePointArc(s['mid'],s['exit'])
         return wire.close()
 
-    def arm_service_opening(self):
-        """Rounded trapezoidal aperture; rear edge follows the outer taper.
+    def arm_service_opening(self,side):
+        """Real rear-open U/Y branch in each arm, using side-specific parameters.
 
-        The front wall is referenced to the carrier plane; the rear edge
-        slopes toward the front as Z rises. All four corner radii are real
-        BREP fillets, not raster approximations.
+        Keep the tapered front service cavity but extend a rounded horizontal
+        throat through the rear exterior. The surviving front ligament remains
+        attached to the upright mounting rail; two branches meet at that root.
         """
+        if side not in (-1,1):
+            raise ValueError("Arm side must be -1 or +1")
         zlo=self.arm_opening_bottom_z_mm
         zhi=self.arm_opening_top_z_mm
         front=self.arm_front_y_mm+self.arm_opening_front_wall_mm
         rearlo=self.arm_opening_rear_bottom_y_mm
         rearhi=self.arm_opening_rear_top_y_mm
-        if not (zhi>zlo+2*self.arm_opening_corner_radius_mm and
-                rearlo>front+2*self.arm_opening_corner_radius_mm and
-                rearhi>front+2*self.arm_opening_corner_radius_mm):
-            raise ValueError('Invalid V005 opening proportions')
-        opening=(cq.Workplane('YZ')
-                 .polyline([(front,zlo),(rearlo,zlo),(rearhi,zhi),(front,zhi)])
-                 .close().extrude(self.arm_thickness_mm+2))
-        # Four edges parallel to extrusion axis produce constant-radius
-        # rounded corners in the YZ aperture profile.
-        return opening.edges('|X').fillet(self.arm_opening_corner_radius_mm).val().translate((-1,0,0))
+        cavity=(cq.Workplane('YZ')
+                .polyline([(front,zlo),(rearlo,zlo),(rearhi,zhi),(front,zhi)])
+                .close().extrude(self.arm_thickness_mm+2)
+                .edges('|X').fillet(self.arm_opening_corner_radius_mm)
+                .val().translate((-1,0,0)))
+        branch=self.cfg['service_left' if side<0 else 'service_right']
+        center=branch['throat_center_z_mm']
+        width=branch['throat_width_mm']
+        end=branch['throat_end_y_mm']
+        if width<=0 or width>zhi-zlo-2*self.arm_opening_corner_radius_mm:
+            raise ValueError('Invalid service branch throat width')
+        if front-self.arm_front_y_mm<self.min_arm_front_ligament_mm:
+            raise ValueError('Arm service aperture leaves insufficient front ligament')
+        if end<=self.arm_outer_rear_bulge_y_mm+width:
+            raise ValueError('Service entry does not clear rear arm exterior')
+        # A horizontal rounded cutter runs from INSIDE cavity to far beyond
+        # rear perimeter; it is deliberately open to the actual arm exterior.
+        throat=(cq.Workplane('YZ').center((25+end)/2,center)
+                .slot2D(end-25+width,width,angle=0)
+                .extrude(self.arm_thickness_mm+2).val().translate((-1,0,0)))
+        return cavity.fuse(throat).clean()
 
-    def arm(self, side):
+    def arm(self,side):
         if side not in (-1,1):
             raise ValueError('side must be +/-1')
         arm=self.rib_workplane().extrude(self.arm_thickness_mm).val()
-        arm=arm.cut(self.arm_service_opening()).clean()
+        arm=arm.cut(self.arm_service_opening(side)).clean()
         center=side*self.arm_spacing_mm/2
         arm=arm.translate((center-self.arm_thickness_mm/2,0,0))
         return check_solid(('left' if side<0 else 'right')+'_arm',arm)
 
+    def port_service_envelope(self,side):
+        """Nominal SD/USB insertion corridor. Real hardware is not measured."""
+        width=self.mount_rail_width_mm
+        center=self.board_hole_x_mm[0 if side<0 else -1]
+        relief=self.cfg['sd_relief' if side<0 else 'usb_relief']
+        inner=center-side*width/2
+        # 0.5 mm margin inside the actual rail cut, including x tolerance.
+        x0=min(inner,inner+side*relief['inner_cut_width_mm'])+.5
+        x1=max(inner,inner+side*relief['inner_cut_width_mm'])-.5
+        z0=self.arm_front_z_mm+relief['station_mm']-relief['length_mm']/2+.5
+        return block(x0,-3,z0,x1-x0,16,relief['length_mm']-1)
+
+    def carrier_rails(self):
+        """Two independent integral mounting rails, no rear sheet.
+
+        Each rail carries a vertical PCB-hole pair and its OWN counterbores.
+        The standoffs are attached to that same rail. Each side has a separate
+        replaceable relief parameter set for SD/USB service.
+        """
+        plane=self.plate_plane()
+        width=self.mount_rail_width_mm
+        h=self.display_height_along_slope_mm
+        t=self.mount_rail_thickness_mm
+        rails=[]
+        for x in self.board_hole_x_mm:
+            side=-1 if x<0 else 1
+            rail=cq.Workplane(plane).center(x,h/2).rect(width,h).extrude(-t).val()
+            relief=self.cfg['sd_relief' if side<0 else 'usb_relief']
+            if relief['enabled']:
+                ligament=width-relief['inner_cut_width_mm']-relief['overhang_mm']/2
+                if ligament<self.min_mount_rail_ligament_mm:
+                    raise ValueError('Port relief removes too much load-bearing rail width')
+                inner=x-side*width/2
+                cut_center=inner+side*relief['inner_cut_width_mm']/2
+                service=(cq.Workplane(plane)
+                         .center(cut_center,relief['station_mm'])
+                         .rect(relief['inner_cut_width_mm']+relief['overhang_mm'],
+                               relief['length_mm'])
+                         .extrude(-t-1).val())
+                rail=rail.cut(service)
+            for station in self.board_hole_s_mm:
+                boss=(cq.Workplane(plane).center(x,station)
+                      .circle(self.display_standoff_diameter_mm/2)
+                      .extrude(self.display_standoff_height_mm).val())
+                rail=rail.fuse(boss)
+            rail=rail.clean()
+            for station in self.board_hole_s_mm:
+                bore=(cq.Workplane(plane).center(x,station)
+                      .circle(self.board_screw_clearance_d_mm/2)
+                      .extrude(-t-1).val())
+                forward=(cq.Workplane(plane).center(x,station)
+                         .circle(self.board_screw_clearance_d_mm/2)
+                         .extrude(self.display_standoff_height_mm+1).val())
+                cb=(cq.Workplane(plane).workplane(offset=-t-.005)
+                    .center(x,station)
+                    .circle(self.board_screw_head_access_d_mm/2)
+                    .extrude(self.board_counterbore_depth_mm+.005).val())
+                rail=rail.cut(bore).cut(forward).cut(cb)
+            rails.append(check_solid(
+                ('left' if side<0 else 'right')+'_mount_rail',rail.clean()))
+        return rails
+
     def carrier(self):
-        plane = self.plate_plane()
-        w = self.display_width_mm
-        h = self.display_height_along_slope_mm
-        t = self.display_plate_thickness_mm
-        # Face toward display is at plane normal zero; support projects rearward.
-        plate = cq.Workplane(plane).center(0,h/2).rect(w,h).extrude(-t).val()
-        # Two side access windows + central electronics service aperture.
-        windows = [(0, h/2, self.display_central_window_width_mm,
-                    self.display_central_window_length_mm),
-                   (-62, h/2, self.display_side_window_width_mm,
-                    self.display_side_window_length_mm),
-                   (+62, h/2, self.display_side_window_width_mm,
-                    self.display_side_window_length_mm)]
-        for x,s,dx,ds in windows:
-            cut = cq.Workplane(plane).center(x,s).rect(dx,ds).extrude(-t-1).val()
-            plate = plate.cut(cut)
-        # Stiffening strips on rear face: away from fastener stations.
-        for s in (5, h-5):
-            stiff = cq.Workplane(plane).center(0,s).rect(w-10, 7).extrude(-t-5).val()
-            plate = plate.fuse(stiff)
-        # All PCB mounting points are parametric and provisional.
-        # Countersunk/counterbored from BACK: tools approach along +normal.
-        for x in self.board_hole_x_mm:
-            for s in self.board_hole_s_mm:
-                boss = cq.Workplane(plane).center(x,s).circle(
-                    self.display_standoff_diameter_mm/2).extrude(
-                    self.display_standoff_height_mm).val()
-                plate = plate.fuse(boss)
-        plate = plate.clean()
-        for x in self.board_hole_x_mm:
-            for s in self.board_hole_s_mm:
-                hole = (cq.Workplane(plane).center(x,s)
-                        .circle(self.board_screw_clearance_d_mm/2)
-                        .extrude(-t-1).val())
-                # Cut through full boss toward screen too.
-                forward = cq.Workplane(plane).center(x,s).circle(
-                    self.board_screw_clearance_d_mm/2).extrude(
-                    self.display_standoff_height_mm+1).val()
-                counterbore = (cq.Workplane(plane).workplane(offset=-t-.005)
-                               .center(x,s).circle(self.board_screw_head_access_d_mm/2)
-                               .extrude(self.board_counterbore_depth_mm+.005).val())
-                plate = plate.cut(hole).cut(forward).cut(counterbore)
-        return check_solid('carrier',plate.clean())
+        """Reference compound: exactly two rails, physically fused into main."""
+        return cq.Compound.makeCompound(self.carrier_rails())
 
     def integrated_support(self):
         # One rigid printable body: saddle + left/right triangular arms + carrier.
@@ -314,7 +348,7 @@ class Design:
                       self.arm_spacing_mm+self.arm_thickness_mm,8,9)
         frame=union(clamp,la,ra,cross)
         carr=self.carrier()
-        full=union(frame,carr)
+        full=union(frame,*self.carrier_rails())
         return check_solid('integrated_main_frame',full)
 
     def screen_reference(self):
@@ -333,12 +367,12 @@ class Design:
         result=[]
         for x in self.board_hole_x_mm:
             for s in self.board_hole_s_mm:
-                Y,Z=self.path_point(s,-self.display_plate_thickness_mm+0.3)
+                Y,Z=self.path_point(s,-self.mount_rail_thickness_mm+0.3)
                 base=(x,Y,Z)
-                shaft=cyl(1.25,self.display_plate_thickness_mm+
+                shaft=cyl(1.25,self.mount_rail_thickness_mm+
                            self.display_standoff_height_mm+0.6,base,n)
                 # Head is behind the carrier, so it's accessible from the cavity.
-                Yh,Zh=self.path_point(s,-self.display_plate_thickness_mm-1.3)
+                Yh,Zh=self.path_point(s,-self.mount_rail_thickness_mm-1.3)
                 head=cyl(2.5,1.6,(x,Yh,Zh),n)
                 result.append(union(shaft,head))
         return result
@@ -366,7 +400,11 @@ class Design:
         }
         for key in ['rail','upper_saddle','keeper','left_arm','right_arm','carrier','main']:
             s=parts[key]
-            check_solid(key,s)
+            if key=='carrier':
+                if len(s.Solids())!=2 or any(not body.isValid() for body in s.Solids()):
+                    raise ValueError('Carrier must be two separate valid mounting rails')
+            else:
+                check_solid(key,s)
             report[f'{key}_volume_mm3']=round(s.Volume(),2)
         # Solid-to-solid interference, not clearance envelope or actual surface fit.
         tests={'main_vs_rail': (main,rail), 'keeper_vs_rail': (keeper,rail),
@@ -414,14 +452,30 @@ class Design:
         n=self.normal
         for x in self.board_hole_x_mm:
             for s in self.board_hole_s_mm:
-                y,z=self.path_point(s,-self.display_plate_thickness_mm-2.5)
+                y,z=self.path_point(s,-self.mount_rail_thickness_mm-2.5)
                 rad=self.rear_access_tool_diameter_mm/2
                 tool=cyl(rad,55,(x,y-55*n[0],z-55*n[1]),(0,n[0],n[1]))
                 vol=tool.intersect(main).Volume()
                 report[f'rear_tool_clearance_x{x:g}_s{s:g}_mm3']=round(vol,5)
                 if vol>.03:
                     raise ValueError(f'Screwdriver blocked at x={x}, s={s}: {vol} mm3')
-        report['status']='PASS: nominal geometry, zero body collisions, rear tools unobstructed'
+        # Verify actual 3D service corridors remain free of bracket solids.
+        for side,label in [(-1,'sd'),(1,'usb')]:
+            branch=self.cfg['service_left' if side<0 else 'service_right']
+            center=side*self.arm_spacing_mm/2
+            probe=block(center-1, self.arm_opening_front_wall_mm+4,
+                        branch['throat_center_z_mm']-1,2,65,2)
+            if parts['left_arm' if side<0 else 'right_arm'].intersect(probe).Volume()>.01:
+                raise ValueError(f'{label}: side-entry throat is blocked')
+            corridor=self.port_service_envelope(side)
+            overlap=main.intersect(corridor).Volume()
+            report[f'{label}_service_envelope_overlap_mm3']=round(overlap,5)
+            report[f'{label}_throat_width_mm']=branch['throat_width_mm']
+            if overlap>.01:
+                raise ValueError(f'{label} port/cable provisional service volume obstructed: {overlap}')
+        report['carrier_rail_count']=len(parts['carrier'].Solids())
+        report['rear_sheet_removed']=True
+        report['status']='PASS: two open mounting rails, rear service branches, zero solid overlaps'
         return report
 
 
@@ -564,15 +618,17 @@ def render_engineering_side_profile(d, output):
         return ring
     support_pts=curve_points(d.rib_workplane().wire().val())
     ax.add_patch(Polygon(support_pts,closed=True,facecolor='#475569',edgecolor='#1e293b',lw=1.8,zorder=3))
-    # Render the TRUE opening BREP: V005 replaced the old vertical capsule
-    # with a filleted tapered quadrilateral, but the side drawing still
-    # depicted the V003 obround. Choose the planar cap's actual outer wire.
-    opening=d.arm_service_opening()
-    side_faces=[f for f in opening.Faces() if abs(f.normalAt().x)>0.999]
-    if not side_faces:
-        raise ValueError('Cannot find planar side of parametric opening')
-    holewire=max(side_faces,key=lambda f:f.Area()).outerWire()
-    ax.add_patch(Polygon(curve_points(holewire),closed=True,facecolor='#f8fafc',edgecolor='#1e293b',lw=1.5,zorder=4))
+    # Draw ACTUAL planar section of cut arm (including open rear throat).
+    # V006 drew a now-nonexistent enclosed aperture on the outside polygon.
+    arm_section=d.arm(-1)
+    yz_faces=[f for f in arm_section.Faces() if abs(f.normalAt().x)>.999]
+    if not yz_faces:
+        raise ValueError('No planar support side found for section drawing')
+    boundary=max(yz_faces,key=lambda f:f.Area()).outerWire()
+    ax.patches[-1].remove()
+    ax.add_patch(Polygon(curve_points(boundary),closed=True,
+                         facecolor='#475569',edgecolor='#1e293b',
+                         lw=1.8,zorder=3))
     clamp_y = d.upper_clamp_width_mm/2
     inside = d.clamp_inner_half
     ax.add_patch(Rectangle((-clamp_y,d.bridge_bottom),d.upper_clamp_width_mm,
@@ -607,7 +663,7 @@ def render_engineering_side_profile(d, output):
     ax.annotate('Removable M4 keeper',xy=(0,d.lower_keeper_top_z_mm-3),
                 xytext=(31,-23),fontsize=9,color='#9a3412',
                 arrowprops=dict(arrowstyle='->',color='#9a3412'))
-    ax.annotate('Two curved ribs / tapered service opening',xy=(35,50),xytext=(68,45),
+    ax.annotate('Two rear-open U/Y service branches',xy=(35,50),xytext=(68,45),
                 fontsize=9,ha='left',color='#334155',
                 arrowprops=dict(arrowstyle='->',color='#334155'))
     ax.axvline(0,color='#0f766e',ls='--',lw=1,zorder=0)
@@ -617,7 +673,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V006 SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V007 SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -649,10 +705,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V006.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V007.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V006.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V007.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')
