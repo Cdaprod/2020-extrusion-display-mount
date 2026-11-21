@@ -528,27 +528,39 @@ def render_engineering_side_profile(d, output):
     # Project the actual curved parametric wire into the engineering drawing.
     # Trace edges in connectivity order; do not connect unordered BREP edges.
     def curve_points(wire):
+        """Sample connected BREP edges using their actual parametric direction.
+
+        OCCT Face.outerWire().Edges() may expose reversed topological edge
+        orientation: Edge.startPoint() can disagree with positionAt(0).
+        Connecting sample arrays without checking the parametric endpoints
+        draws false diagonals across the profile. Use positionAt(0/1) for
+        BOTH connectivity and sampling orientation.
+        """
         edges=list(wire.Edges())
+        if not edges:
+            raise ValueError('Empty source BREP boundary')
         ring=[]
         first=edges.pop(0)
-        n=max(3,int(first.Length()/0.35))
-        ring.extend((first.positionAt(i/n).y,first.positionAt(i/n).z) for i in range(n))
-        last=first.endPoint()
+        count=max(3,int(first.Length()/0.3))
+        ring.extend((first.positionAt(i/count).y,first.positionAt(i/count).z)
+                    for i in range(count))
+        last=first.positionAt(1)
         while edges:
             best=None
             for index,e in enumerate(edges):
-                for reverse,q in ((False,e.startPoint()),(True,e.endPoint())):
-                    d=(q-last).Length
-                    if best is None or d<best[0]:
-                        best=(d,index,reverse)
-            d,index,reverse=best
-            if d>0.01:
-                raise ValueError(f'Unconnected projected rib-wire edge: gap {d:.3f} mm')
+                for reversed_param,t in ((False,0),(True,1)):
+                    dist=(e.positionAt(t)-last).Length
+                    if best is None or dist<best[0]:
+                        best=(dist,index,reversed_param)
+            dist,index,reversed_param=best
+            if dist>0.01:
+                raise ValueError(f'Disconnected source wire: {dist:.4f} mm gap')
             e=edges.pop(index)
-            n=max(3,int(e.Length()/0.35))
-            ring.extend((e.positionAt((1-i/n) if reverse else i/n).y,
-                         e.positionAt((1-i/n) if reverse else i/n).z) for i in range(n))
-            last=e.startPoint() if reverse else e.endPoint()
+            count=max(3,int(e.Length()/0.3))
+            for n in range(count):
+                point=e.positionAt(1-n/count if reversed_param else n/count)
+                ring.append((point.y,point.z))
+            last=e.positionAt(0 if reversed_param else 1)
         return ring
     support_pts=curve_points(d.rib_workplane().wire().val())
     ax.add_patch(Polygon(support_pts,closed=True,facecolor='#475569',edgecolor='#1e293b',lw=1.8,zorder=3))
