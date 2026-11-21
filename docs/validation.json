@@ -45,9 +45,9 @@
   "rail_volume_mm3": 33082.04,
   "upper_saddle_volume_mm3": 70060.79,
   "keeper_volume_mm3": 26554.94,
-  "left_arm_volume_mm3": 51599.08,
-  "right_arm_volume_mm3": 50822.13,
-  "main_volume_mm3": 175433.05,
+  "left_arm_volume_mm3": 62982.86,
+  "right_arm_volume_mm3": 62222.3,
+  "main_volume_mm3": 198217.0,
   "main_vs_rail_overlap_mm3": 0.0,
   "keeper_vs_rail_overlap_mm3": 0.0,
   "main_vs_keeper_overlap_mm3": 0.0,
@@ -68,8 +68,10 @@
   "rear_tool_clearance_x39_s65_mm3": 0.0,
   "sd_service_envelope_overlap_mm3": 0.0,
   "sd_throat_width_mm": 15,
+  "sd_adaptive_throat_center_z_mm": 72.5,
   "usb_service_envelope_overlap_mm3": 0.0,
   "usb_throat_width_mm": 17,
+  "usb_adaptive_throat_center_z_mm": 73.5,
   "mount_hole_center_spacing_mm": 78,
   "support_arm_center_spacing_mm": 78,
   "integral_arm_mount_stations_s_mm": [
@@ -78,6 +80,27 @@
   ],
   "m3_pocket_floor_wall_mm": 3.2,
   "m3_pocket_radial_wall_mm": 2.5,
+  "v011_pitch_driven_support_profile": {
+    "bottom_z": 64.0,
+    "top_z": 86.0,
+    "rear_bottom_y": 40,
+    "rear_top_y": 30,
+    "outer_bulge_z": 85.0,
+    "screw_z": [
+      53.0,
+      98.0
+    ],
+    "support_radius": 7.5,
+    "roof_web_z": 12.0,
+    "top_slope_rear_web_y": 26.133333333333333
+  },
+  "v011_required_m3_support_radius_mm": 7.5,
+  "v011_min_screw_web_mm": 4,
+  "v011_center_pitch_mm": 45,
+  "v011_front_opening_bounds_z_mm": [
+    64.0,
+    86.0
+  ],
   "v010_front_neck_width_mm": 12,
   "v010_front_side_trim_mm": 2,
   "v010_front_draft_depth_mm": 8.5,
@@ -100,10 +123,10 @@
   "detached_carrier_count": 0,
   "integral_arm_m3_holes": 4,
   "rear_sheet_removed": true,
-  "status": "PASS V010: compact tapered front rails, rounded arm profile, four M3 rear-access seats",
+  "status": "PASS V011: screw-station-driven aperture, roof and rear support web, integral M3 arms",
   "rail_reference_sha256": "978f92d68d8ce3ca31434f931257e2c80632c417ef78b4b6f0189b26e5b4c9f0",
   "design_config": {
-    "release": "V010",
+    "release": "V011",
     "units": "mm",
     "rail_reference_length_mm": 120,
     "rail_nominal_size_mm": 20,
@@ -148,7 +171,7 @@
     "display_side_window_length_mm": 48,
     "rear_access_tool_diameter_mm": 4.2,
     "nominal_display_reference_thickness_mm": 5,
-    "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured. V009 corrects through-thickness port relief notches that crossed the M3 screw centerlines; retain a continuous central rail spine and integrated screw-bearing pads, with rear-open counterbores. V009 structural correction: no separate carrier. Both arms directly carry the M3 head seats, \u00d83.4 through-bores, and rear \u00d87 tool corridors; remaining front seat wall 3.2 mm. Provisional stations S=20/65 avoid front opening while measured PCB pattern remains unknown. V010: nominal \u00d812 front neck around \u00d87 rear driver access, X width tapered into the full structural arm; top excess trimmed to 9.5 mm above upper M3; analytic tangent arcs on the structural outer profile and a 1 mm keeper vertical-edge fillet. Critical bores, mating planes, source rail geometry and floor unchanged; print strength remains unqualified.",
+    "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured. V009 corrects through-thickness port relief notches that crossed the M3 screw centerlines; retain a continuous central rail spine and integrated screw-bearing pads, with rear-open counterbores. V009 structural correction: no separate carrier. Both arms directly carry the M3 head seats, \u00d83.4 through-bores, and rear \u00d87 tool corridors; remaining front seat wall 3.2 mm. Provisional stations S=20/65 avoid front opening while measured PCB pattern remains unknown. V010: nominal \u00d812 front neck around \u00d87 rear driver access, X width tapered into the full structural arm; top excess trimmed to 9.5 mm above upper M3; analytic tangent arcs on the structural outer profile and a 1 mm keeper vertical-edge fillet. Critical bores, mating planes, source rail geometry and floor unchanged; print strength remains unqualified. V011: screw stations determine side opening top/bottom, rear opening contour, and exterior shoulder/bulge height. A full \u00d87 tool-path plus 4 mm web envelope drives key planes; roof and lower web are checked against tangentially filleted cuts; no independent fixed Z opening.",
     "require_perpendicular_display": true,
     "require_display_centering": true,
     "arm_outer_rear_shoulder_y_mm": 16,
@@ -230,6 +253,15 @@
     "arm_toe_radius_mm": 1.5,
     "arm_front_top_fillet_mm": 2,
     "arm_front_foot_fillet_mm": 2,
-    "keeper_corner_fillet_mm": 1
+    "keeper_corner_fillet_mm": 1,
+    "min_screw_envelope_web_mm": 4,
+    "opening_transition_clearance_mm": 2,
+    "opening_lower_offset_from_screw_mm": 11,
+    "opening_upper_offset_from_screw_mm": 12,
+    "opening_rear_web_mm": 8,
+    "opening_rear_extra_y_mm": 9,
+    "outer_rear_bulge_margin_mm": 10,
+    "support_profile_adaptive": true,
+    "service_throat_min_boundary_margin_mm": 1
   }
 }
