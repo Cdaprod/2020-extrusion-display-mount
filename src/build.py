@@ -101,6 +101,7 @@ class Design:
                     raise ValueError('Service notch clips screw bearing material')
         return radial
 
+    @property
     def theta(self):
         return math.radians(self.display_angle_deg)
 
