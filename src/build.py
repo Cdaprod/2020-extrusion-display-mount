@@ -489,8 +489,11 @@ class Design:
         for side,label in [(-1,'sd'),(1,'usb')]:
             branch=self.cfg['service_left' if side<0 else 'service_right']
             center=side*self.support_arm_center_spacing_mm/2
-            probe=block(center-1, self.arm_opening_front_wall_mm+4,
-                        branch['throat_center_z_mm']-1,2,65,2)
+            # The V008 path enters from Y<0 at the display side, not from
+            # the exterior rear slope. Check the actual front opening up to Y=23.
+            probe=block(center-1,branch['throat_start_y_mm']+2,
+                        branch['throat_center_z_mm']-1,2,
+                        self.arm_opening_front_wall_mm+8,2)
             if parts['left_arm' if side<0 else 'right_arm'].intersect(probe).Volume()>.01:
                 raise ValueError(f'{label}: side-entry throat is blocked')
             corridor=self.port_service_envelope(side)
