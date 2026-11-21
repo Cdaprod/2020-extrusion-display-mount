@@ -54,7 +54,7 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(self.cfg['board_hole_s_mm'][1]-self.cfg['board_hole_s_mm'][0],31)
 
     def test_perpendicular_carrier_and_centered_saddle_datums(self):
-        self.assertEqual(self.cfg['release'], 'V003')
+        self.assertEqual(self.cfg['release'], 'V004')
         self.assertAlmostEqual(self.d.display_angle_deg,90.0,places=6)
         self.assertAlmostEqual(self.d.arm_front_y_mm,0.0,places=6)
         self.assertAlmostEqual(self.d.tangent[0],0.0,places=6)
@@ -96,6 +96,25 @@ class ModelTests(unittest.TestCase):
         arcs=sum(e.geomType()=='CIRCLE' for e in self.parts['left_arm'].Edges())
         self.assertGreaterEqual(arcs,4)
         self.assertEqual(self.d.arm_service_slot_angle_deg,90)
+
+    def test_v004_no_front_overhanging_nose(self):
+        pts=self.d.rib_profile_stations()
+        self.assertAlmostEqual(pts[0][0],-self.d.upper_clamp_width_mm/2)
+        self.assertAlmostEqual(pts[-1][0],-self.d.upper_clamp_width_mm/2)
+        self.assertGreaterEqual(min(p[0] for p in pts),-self.d.upper_clamp_width_mm/2)
+
+    def test_v004_analytic_fillet_tangency(self):
+        import math
+        for section in self.d.rib_profile_geometry():
+            if section['mid'] is None:
+                continue
+            c=section['center']
+            for point,direction in ((section['entry'],section['incoming']),
+                                    (section['exit'],section['outgoing'])):
+                radius=(point[0]-c[0],point[1]-c[1])
+                dot=radius[0]*direction[0]+radius[1]*direction[1]
+                self.assertAlmostEqual(dot,0,places=5)
+                self.assertAlmostEqual(math.hypot(*radius),section['radius'],places=5)
 
     def test_changes_to_configuration_update_geometry(self):
         revised=dict(self.cfg)

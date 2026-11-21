@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V003.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V004.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -148,34 +148,79 @@ class Design:
                 solid = solid.cut(tool).cut(cb)
         return check_solid('keeper', solid.clean())
 
-    def rib_workplane(self):
-        """Freeform-inspired sculpted arm with true circular transition arcs.
+    def rib_profile_stations(self):
+        """V004 saddle-edge anchored side section, in (Y,Z) millimeters.
 
-        Coordinates are Y,Z in the extrusion's cross-sectional plane.  Arm
-        extent, rounded rear shoulder, lower taper and toe are all controlled
-        by config/mount_spec.json; this is not a raster-traced mesh profile.
+        First and last foot vertices share the actual saddle front datum,
+        eliminating V003's cantilevered rounded nose. The rear overhang is
+        deliberately bounded and configurable.
         """
-        ztop = (self.arm_front_z_mm + self.display_height_along_slope_mm
-                + self.arm_outer_rear_shoulder_z_above_carrier_mm)
-        toe_y = self.arm_front_toe_y_mm
-        foot_z = self.bridge_top - 0.75
-        rear_y = self.arm_outer_lower_rear_y_mm
-        bulge_y = self.arm_outer_rear_bulge_y_mm
-        bulge_z = self.arm_outer_rear_bulge_z_mm
-        shoulder_y = self.arm_outer_rear_shoulder_y_mm
-        r = self.arm_curve_radius_mm
-        return (cq.Workplane('YZ')
-            .moveTo(toe_y, foot_z+r)
-            .threePointArc((toe_y+0.32*r,foot_z+0.32*r),(toe_y+r,foot_z))
-            .lineTo(rear_y-r,foot_z)
-            .threePointArc((rear_y-0.15*r,foot_z+0.25*r),(rear_y,foot_z+r))
-            .lineTo(bulge_y,bulge_z-5)
-            .threePointArc((bulge_y+0.3*r,bulge_z),(bulge_y-0.75*r,bulge_z+5))
-            .lineTo(shoulder_y+r,ztop-r)
-            .threePointArc((shoulder_y+0.45*r,ztop-0.22*r),(shoulder_y,ztop))
-            .lineTo(self.arm_front_y_mm+1,ztop)
-            .lineTo(self.arm_front_y_mm+1,self.arm_front_z_mm)
-            .close())
+        z0 = self.bridge_top - self.arm_saddle_intersection_mm
+        ztop = self.arm_front_z_mm + self.display_height_along_slope_mm + self.arm_outer_rear_shoulder_z_above_carrier_mm
+        return [
+            (-self.upper_clamp_width_mm / 2, z0),
+            (self.arm_outer_lower_rear_y_mm, z0),
+            (self.arm_outer_rear_bulge_y_mm, self.arm_outer_rear_bulge_z_mm),
+            (self.arm_outer_rear_shoulder_y_mm, ztop),
+            (self.arm_front_y_mm + self.arm_top_land_mm, ztop),
+            (self.arm_front_y_mm + self.arm_top_land_mm, self.arm_front_z_mm),
+            (-self.upper_clamp_width_mm / 2, z0),
+        ]
+
+    def rib_profile_geometry(self):
+        """Return connected analytic lines/arcs with mathematically G1 joins.
+
+        Fillet tangent offsets are R*tan(turn/2). A circular arc is defined
+        from the two tangent points and the angle-bisector midpoint. The
+        geometric radius is therefore exact; no heuristic three-point arcs.
+        """
+        import math
+        pts = self.rib_profile_stations()[:-1]
+        radii = [0, self.arm_lower_rear_fillet_mm,
+                 self.arm_rear_transition_fillet_mm,
+                 self.arm_upper_shoulder_fillet_mm, 0, 0]
+        result=[]
+        n=len(pts)
+        for i,p in enumerate(pts):
+            prev=pts[(i-1)%n]; nex=pts[(i+1)%n]
+            v=(prev[0]-p[0],prev[1]-p[1])
+            w=(nex[0]-p[0],nex[1]-p[1])
+            lv=math.hypot(*v); lw=math.hypot(*w)
+            if min(lv,lw)<1e-8:
+                raise ValueError('Degenerate V004 rib station')
+            u=(v[0]/lv,v[1]/lv); q=(w[0]/lw,w[1]/lw)
+            angle=math.acos(max(-1,min(1,u[0]*q[0]+u[1]*q[1])))
+            r=radii[i]
+            if not r:
+                result.append({'entry':p,'exit':p,'mid':None,'radius':0})
+                continue
+            d=r/math.tan(angle/2)
+            if d>=min(lv,lw)*0.47:
+                raise ValueError(f'V004 fillet radius at station {i} exceeds available tangent length')
+            a=(p[0]+u[0]*d,p[1]+u[1]*d)
+            b=(p[0]+q[0]*d,p[1]+q[1]*d)
+            bis=(u[0]+q[0],u[1]+q[1])
+            lb=math.hypot(*bis)
+            center=(p[0]+bis[0]/lb*r/math.sin(angle/2),
+                    p[1]+bis[1]/lb*r/math.sin(angle/2))
+            va=(a[0]-center[0],a[1]-center[1])
+            vb=(b[0]-center[0],b[1]-center[1])
+            midv=(va[0]+vb[0],va[1]+vb[1])
+            lm=math.hypot(*midv)
+            mid=(center[0]+r*midv[0]/lm,center[1]+r*midv[1]/lm)
+            result.append({'entry':a,'exit':b,'mid':mid,'radius':r,
+                           'center':center,'incoming':u,'outgoing':q})
+        return result
+
+    def rib_workplane(self):
+        sections=self.rib_profile_geometry()
+        wire=cq.Workplane('YZ').moveTo(*sections[0]['exit'])
+        for j in range(1,len(sections)+1):
+            s=sections[j%len(sections)]
+            wire=wire.lineTo(*s['entry'])
+            if s['mid'] is not None:
+                wire=wire.threePointArc(s['mid'],s['exit'])
+        return wire.close()
 
     def arm(self, side):
         if side not in (-1,1):
@@ -245,7 +290,7 @@ class Design:
         clamp = self.upper_clamp()
         la,ra = self.arm(-1),self.arm(1)
         # Rear cross-tie at frame foot, leaving center open for PCB screwdriver access.
-        tie_y=self.arm_rear_foot_y_mm-9
+        tie_y=self.arm_outer_lower_rear_y_mm-9
         cross = block(-self.arm_spacing_mm/2-self.arm_thickness_mm/2,
                       tie_y,self.bridge_top,
                       self.arm_spacing_mm+self.arm_thickness_mm,8,9)
@@ -527,7 +572,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V003 SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V004 SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -559,10 +604,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V003.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V004.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V003.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V004.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')
