@@ -685,11 +685,11 @@ def render_engineering_side_profile(d, output):
     p3 = d.path_point(0,-d.display_plate_thickness_mm)
     ax.add_patch(Polygon([p0,p1,p2,p3],closed=True,facecolor='#38bdf8',
                          alpha=.9,edgecolor='#0369a1',lw=1.5,zorder=8))
-    for station in d.board_hole_s_mm:
+    for station in d.mounting_stations_s_mm:
         ys,zs=d.path_point(station,d.display_standoff_height_mm)
         ax.plot(ys,zs,'o',markersize=7,color='#eab308',mec='#713f12',zorder=9)
         ax.annotate('M3 candidate\nS = '+str(station), (ys,zs),
-                    xytext=(-103,6 if station==d.board_hole_s_mm[0] else 12),
+                    xytext=(-103,6 if station==d.mounting_stations_s_mm[0] else 12),
                     textcoords='offset points',fontsize=8,color='#854d0e',
                     arrowprops=dict(arrowstyle='-',color='#a16207',lw=.7))
     ax.annotate('Display carrier + 2 arms\n'+str(d.display_angle_deg)+'° to saddle bearing face',
