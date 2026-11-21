@@ -15,3 +15,5 @@
 - V003 Freeform silhouette acceptance: two full sculpted arms with radiused upper rear shoulder, swept angled back, radiused lower/rear transitions, front toe, and tall vertical rounded obround opening. The centered top saddle has an enabled shallow key entering the actual rail STEP's +Z T-slot, validated by zero volume overlap. Do not revert to V002's hard triangular cutout. The 90° display/saddle and Y=0 alignment, lower M4 keeper, four M2.5 board mounts and unobstructed rear access must remain.
 
 - V004 user-directed profile: front support foot must terminate at upper saddle's FRONT face datum, never project as a rounded nose. Keep shortened rear taper and exact G1 line/arc tangency at upper shoulder, rear transition and lower rear foot. Validate analytically with radius-dot-tangent checks; preserve V003's functional rail/key/display fastener constraints.
+
+- V006: a lower rear gusset must be part of the *actual external YZ wire* and visually apparent in the generated side profile, not an interior wedge. Keep a BREP solid-volume test outside the rear saddle face below bridge height.

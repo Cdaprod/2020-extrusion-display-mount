@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V005.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V006.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -149,22 +149,25 @@ class Design:
         return check_solid('keeper', solid.clean())
 
     def rib_profile_stations(self):
-        """V004 saddle-edge anchored side section, in (Y,Z) millimeters.
-
-        First and last foot vertices share the actual saddle front datum,
-        eliminating V003's cantilevered rounded nose. The rear overhang is
-        deliberately bounded and configurable.
-        """
-        z0 = self.bridge_top - self.arm_saddle_intersection_mm
-        ztop = self.arm_front_z_mm + self.display_height_along_slope_mm + self.arm_outer_rear_shoulder_z_above_carrier_mm
+        """V006: exterior YZ wire includes rear diagonal saddle-to-arm gusset."""
+        z_foot=self.bridge_top-self.arm_saddle_intersection_mm
+        z_top=self.arm_front_z_mm+self.display_height_along_slope_mm+self.arm_outer_rear_shoulder_z_above_carrier_mm
+        back=self.upper_clamp_width_mm/2-self.arm_gusset_saddle_overlap_mm
+        root_z=self.upper_clamp_sidewall_bottom_z_mm+self.arm_gusset_bottom_relief_mm
+        if not (0<self.arm_gusset_saddle_overlap_mm<self.upper_clamp_width_mm/2):
+            raise ValueError("Invalid rear saddle overlap")
+        if not (root_z<self.bridge_bottom-3 and self.arm_outer_lower_rear_y_mm>back+12):
+            raise ValueError("Exterior rear gusset geometry invalid")
         return [
-            (-self.upper_clamp_width_mm / 2, z0),
-            (self.arm_outer_lower_rear_y_mm, z0),
-            (self.arm_outer_rear_bulge_y_mm, self.arm_outer_rear_bulge_z_mm),
-            (self.arm_outer_rear_shoulder_y_mm, ztop),
-            (self.arm_front_y_mm + self.arm_top_land_mm, ztop),
-            (self.arm_front_y_mm + self.arm_top_land_mm, self.arm_front_z_mm),
-            (-self.upper_clamp_width_mm / 2, z0),
+            (-self.upper_clamp_width_mm/2,z_foot),
+            (back,z_foot),
+            (back,root_z),
+            (self.arm_outer_lower_rear_y_mm,z_foot),
+            (self.arm_outer_rear_bulge_y_mm,self.arm_outer_rear_bulge_z_mm),
+            (self.arm_outer_rear_shoulder_y_mm,z_top),
+            (self.arm_front_y_mm+self.arm_top_land_mm,z_top),
+            (self.arm_front_y_mm+self.arm_top_land_mm,self.arm_front_z_mm),
+            (-self.upper_clamp_width_mm/2,z_foot),
         ]
 
     def rib_profile_geometry(self):
@@ -176,7 +179,7 @@ class Design:
         """
         import math
         pts = self.rib_profile_stations()[:-1]
-        radii = [0, self.arm_lower_rear_fillet_mm,
+        radii = [0, 0, 0, self.arm_lower_rear_fillet_mm,
                  self.arm_rear_transition_fillet_mm,
                  self.arm_upper_shoulder_fillet_mm, 0, 0]
         result=[]
@@ -245,27 +248,10 @@ class Design:
         # rounded corners in the YZ aperture profile.
         return opening.edges('|X').fillet(self.arm_opening_corner_radius_mm).val().translate((-1,0,0))
 
-    def arm_lower_gusset(self):
-        """Fill the rear saddle-to-arm wedge without entering rail or keeper.
-
-        Rear saddle wall occupies Y=[inner_half, saddle_width/2].
-        The wedge begins just inside its back edge for a robust union.
-        """
-        y0=self.upper_clamp_width_mm/2-self.arm_gusset_saddle_overlap_mm
-        y1=self.arm_outer_lower_rear_y_mm-self.arm_lower_rear_fillet_mm
-        z0=self.upper_clamp_sidewall_bottom_z_mm+self.arm_gusset_bottom_relief_mm
-        z1=self.bridge_top-self.arm_saddle_intersection_mm+0.5
-        if y1<=self.upper_clamp_width_mm/2 or z0>=z1:
-            raise ValueError('Invalid V005 gusset bounds')
-        return (cq.Workplane('YZ')
-                .polyline([(y0,z0),(y0,z1),(y1,z1)])
-                .close().extrude(self.arm_thickness_mm).val())
-
     def arm(self, side):
         if side not in (-1,1):
             raise ValueError('side must be +/-1')
         arm=self.rib_workplane().extrude(self.arm_thickness_mm).val()
-        arm=arm.fuse(self.arm_lower_gusset()).clean()
         arm=arm.cut(self.arm_service_opening()).clean()
         center=side*self.arm_spacing_mm/2
         arm=arm.translate((center-self.arm_thickness_mm/2,0,0))
@@ -402,6 +388,16 @@ class Design:
             raise ValueError('Display datum must be centered over saddle in Y')
         # The shallow mouth-entry key must be inside the source rail's actual
         # +Z T-slot void. It is an indexing feature, not the load-bearing fastener.
+        # Probe real material in the lower rear region that was empty in V006.
+        stations=self.rib_profile_stations()
+        root=stations[2]
+        sample=block(-self.arm_spacing_mm/2-self.arm_thickness_mm/2+1,
+                     root[0]+8,self.bridge_bottom-1,2,2,2)
+        vol=parts['left_arm'].intersect(sample).Volume()
+        report['visible_rear_gusset_root_yz_mm']=[round(v,4) for v in root]
+        report['visible_rear_gusset_sample_mm3']=round(vol,4)
+        if root[1]>=self.bridge_bottom-3 or vol<1:
+            raise ValueError('Exterior rear gusset missing from actual BREP')
         report['top_slot_key_enabled']=bool(self.top_slot_key_enabled)
         if self.top_slot_key_enabled:
             key=block(-self.top_slot_key_length_mm/2,
@@ -604,7 +600,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V005 SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V006 SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -636,10 +632,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V005.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V006.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V005.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V006.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')
