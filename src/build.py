@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V009.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V010.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -71,13 +71,24 @@ class Design:
         return (self.board_screw_station_center_mm-h,
                 self.board_screw_station_center_mm+h)
 
+    @property
+    def front_neck_width_mm(self):
+        """Minimum X width of the narrowed, arm-integrated front mounting face."""
+        return self.arm_thickness_mm-2*self.arm_front_rail_side_trim_mm
+
     def validate_mount_dimensions(self):
         """M3 centers are constrained inside the actual structural arms."""
         if abs(self.display_angle_deg-90)>1e-6: raise ValueError('Display face must be vertical')
         if self.mount_hole_center_spacing_mm<=0 or self.support_arm_center_spacing_mm<=0:
             raise ValueError('Invalid symmetric X spacing')
         offset=abs(self.mount_hole_center_spacing_mm-self.support_arm_center_spacing_mm)/2
-        radial=(self.arm_thickness_mm-self.board_driver_access_d_mm)/2-offset
+        radial=(self.front_neck_width_mm-self.board_driver_access_d_mm)/2-offset
+        if self.arm_front_rail_side_trim_mm<0 or self.front_neck_width_mm<=0:
+            raise ValueError('V010 side trims remove the arm neck')
+        if self.arm_front_rail_taper_depth_mm<=self.mount_pad_axial_thickness_mm:
+            raise ValueError('V010 front draft must reach the rear structural web')
+        if self.upper_boss_cap_extra_mm < self.board_driver_access_d_mm/2+self.min_screw_head_radial_wall_mm+1:
+            raise ValueError('V010 upper curved tip too close to M3 access bore')
         if radial<self.min_screw_head_radial_wall_mm:
             raise ValueError('M3 driver passage exits the structural arm')
         if self.board_driver_access_d_mm<self.board_screw_head_access_d_mm:
@@ -189,12 +200,18 @@ class Design:
                 # Clear screw head to at least 8.0 mm in lower face.
                 cb = cyl(4.0, 2.0, (x, y, top-t-.005))
                 solid = solid.cut(tool).cut(cb)
+        # Round only the four vertical outside corners; preserve the M4
+        # bearing faces, counterbores and clamp datum planes exactly.
+        if self.keeper_corner_fillet_mm>0:
+            solid=cq.Workplane(obj=solid).edges('|Z').fillet(self.keeper_corner_fillet_mm).val()
         return check_solid('keeper', solid.clean())
 
     def rib_profile_stations(self):
         """V006: exterior YZ wire includes rear diagonal saddle-to-arm gusset."""
         z_foot=self.bridge_top-self.arm_saddle_intersection_mm
-        z_top=self.arm_front_z_mm+self.display_height_along_slope_mm+self.arm_outer_rear_shoulder_z_above_carrier_mm
+        # Keep a rounded, compact cap above the upper fastener rather than
+        # V010's tall rectangular front tower. Derived from the M3 station.
+        z_top=self.path_point(self.mounting_stations_s_mm[1])[1]+self.upper_boss_cap_extra_mm
         back=self.upper_clamp_width_mm/2-self.arm_gusset_saddle_overlap_mm
         root_z=self.upper_clamp_sidewall_bottom_z_mm+self.arm_gusset_bottom_relief_mm
         if not (0<self.arm_gusset_saddle_overlap_mm<self.upper_clamp_width_mm/2):
@@ -222,9 +239,11 @@ class Design:
         """
         import math
         pts = self.rib_profile_stations()[:-1]
-        radii = [0, 0, 0, self.arm_lower_rear_fillet_mm,
+        radii = [self.arm_toe_radius_mm, 0, 0, self.arm_lower_rear_fillet_mm,
                  self.arm_rear_transition_fillet_mm,
-                 self.arm_upper_shoulder_fillet_mm, 0, 0]
+                 self.arm_upper_shoulder_fillet_mm,
+                 self.arm_front_top_fillet_mm,
+                 self.arm_front_foot_fillet_mm]
         result=[]
         n=len(pts)
         for i,p in enumerate(pts):
@@ -299,6 +318,35 @@ class Design:
                 .extrude(self.arm_thickness_mm+2).val().translate((-1,0,0)))
         return cavity.fuse(throat).clean()
 
+    def trim_forward_arm_face(self, arm, side):
+        """G1-free drafted side relief: retain only a compact M3-safe front neck.
+
+        A pair of triangular XY cutters gradually reduce the forward mounting
+        face from 16 mm to a nominal 12 mm, tapering outward into the existing
+        full-thickness diagonal support. The M3 counterbore floor, Ø7 access
+        corridor, and every datum remain unchanged. No floating boss or tab.
+        """
+        trim=self.arm_front_rail_side_trim_mm
+        if trim<=0:
+            return arm
+        half=self.arm_thickness_mm/2
+        center=side*self.support_arm_center_spacing_mm/2
+        ymin=self.arm_front_y_mm+self.arm_top_land_mm
+        yend=ymin+self.arm_front_rail_taper_depth_mm
+        z0=self.arm_front_z_mm+self.arm_front_neck_start_above_datum_mm
+        z1=self.path_point(self.mounting_stations_s_mm[1])[1]+self.upper_boss_cap_extra_mm+2
+        if z0 >= self.path_point(self.mounting_stations_s_mm[0])[1]-self.board_driver_access_d_mm/2:
+            raise ValueError('V010 tapered trim misses lower M3 station')
+        for sign in (-1,1):
+            edge=center+sign*half
+            outer=edge+sign*1.0
+            inset=edge-sign*trim
+            profile=[(outer,ymin-2),(inset,ymin-2),(inset,ymin),
+                     (edge,yend),(outer,yend)]
+            cutter=cq.Workplane('XY').polyline(profile).close().extrude(z1-z0).val()
+            arm=arm.cut(cutter.translate((0,0,z0)))
+        return arm.clean()
+
     def arm(self,side):
         """The sculpted arm itself carries M3 seats and rear driver passages.
 
@@ -311,6 +359,7 @@ class Design:
         arm=self.rib_workplane().extrude(self.arm_thickness_mm).val()
         arm=arm.cut(self.arm_service_opening(side)).clean()
         arm=arm.translate((center-self.arm_thickness_mm/2,0,0))
+        arm=self.trim_forward_arm_face(arm,side)
         face_y=self.arm_front_y_mm+self.arm_top_land_mm
         floor=self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm
         for station in self.mounting_stations_s_mm:
@@ -452,7 +501,7 @@ class Design:
         for side,label in [(-1,'sd'),(1,'usb')]:
             branch=self.cfg['service_left' if side<0 else 'service_right']
             center=side*self.support_arm_center_spacing_mm/2
-            # The V009 path enters from Y<0 at the display side, not from
+            # The V010 path enters from Y<0 at the display side, not from
             # the exterior rear slope. Check the actual front opening up to Y=23.
             probe=block(center-1,branch['throat_start_y_mm']+2,
                         branch['throat_center_z_mm']-1,2,
@@ -470,11 +519,20 @@ class Design:
         report['integral_arm_mount_stations_s_mm']=list(self.mounting_stations_s_mm)
         report['m3_pocket_floor_wall_mm']=round(self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm,4)
         report['m3_pocket_radial_wall_mm']=round(self.validate_mount_dimensions(),4)
+        report['v010_front_neck_width_mm']=self.front_neck_width_mm
+        report['v010_front_side_trim_mm']=self.arm_front_rail_side_trim_mm
+        report['v010_front_draft_depth_mm']=self.arm_front_rail_taper_depth_mm
+        report['v010_upper_tip_above_m3_mm']=self.upper_boss_cap_extra_mm
+        report['v010_analytic_outer_corner_radii_mm']=[
+            self.arm_toe_radius_mm, self.arm_front_top_fillet_mm,
+            self.arm_front_foot_fillet_mm, self.arm_lower_rear_fillet_mm,
+            self.arm_rear_transition_fillet_mm, self.arm_upper_shoulder_fillet_mm]
+        report['v010_keeper_corner_fillet_mm']=self.keeper_corner_fillet_mm
         report['service_front_opening_yz_target_mm']=[0,20,60,80]
         report['detached_carrier_count']=0
         report['integral_arm_m3_holes']=4
         report['rear_sheet_removed']=True
-        report['status']='PASS: one integral frame with four M3 rear-access seats; no detached carrier'
+        report['status']='PASS V010: compact tapered front rails, rounded arm profile, four M3 rear-access seats'
         return report
 
 
@@ -672,7 +730,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V009 INTEGRAL-ARM SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V010 COMPACT-BOSS SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -704,10 +762,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V009.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V010.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V009.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V010.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')

@@ -1,4 +1,4 @@
-"""V009: M3 mounting holes are integral to the actual sculpted arms."""
+"""V010: M3 mounting holes are integral to the actual sculpted arms."""
 import json,sys,unittest
 from pathlib import Path
 import cadquery as cq
@@ -17,7 +17,7 @@ class ModelTests(unittest.TestCase):
 
     def test_integrated_vertical_mount_pitches(self):
         d=self.d
-        self.assertEqual(self.cfg['release'],'V009')
+        self.assertEqual(self.cfg['release'],'V010')
         self.assertFalse(hasattr(d,'carrier'))
         self.assertFalse(hasattr(d,'carrier_rails'))
         self.assertEqual(d.mounting_x_centers_mm,(-39,39))
@@ -61,10 +61,26 @@ class ModelTests(unittest.TestCase):
             self.assertLess(result[key],.01)
         self.assertEqual(sum(k.startswith('rear_tool_clearance_') for k in result),4)
 
-    def test_v009_manufacturing_and_preview_outputs(self):
+    def test_v010_boss_trimming_is_constrained(self):
+        d=self.d
+        self.assertAlmostEqual(d.front_neck_width_mm,12.0)
+        self.assertAlmostEqual(d.validate_mount_dimensions(),2.5)
+        self.assertLess(d.path_point(d.mounting_stations_s_mm[1])[1]+d.upper_boss_cap_extra_mm,
+                        d.arm_front_z_mm+d.display_height_along_slope_mm+16)
+        self.assertGreater(d.keeper_corner_fillet_mm,0)
+        self.assertTrue(all(v['radius']>0 for v in
+                        (d.rib_profile_geometry()[0],d.rib_profile_geometry()[6],
+                         d.rib_profile_geometry()[7])))
+        for key,value in [('arm_front_rail_side_trim_mm',3.0),
+                          ('upper_boss_cap_extra_mm',3.0),
+                          ('arm_front_rail_taper_depth_mm',5.0)]:
+            bad=dict(self.cfg);bad[key]=value
+            with self.assertRaises(ValueError):Design(bad).validate_mount_dimensions()
+
+    def test_v010_manufacturing_and_preview_outputs(self):
         for name in ('main.step','left_arm.step','right_arm.step',
-                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V009.step',
-                     'PRINTABLE_PARTS_V009.step','M3_DISPLAY_SCREWS_REFERENCE.step'):
+                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V010.step',
+                     'PRINTABLE_PARTS_V010.step','M3_DISPLAY_SCREWS_REFERENCE.step'):
             self.assertTrue((ROOT/'step'/name).exists(),name)
         self.assertTrue((ROOT/'stl/main.stl').exists())
         self.assertFalse((ROOT/'step/carrier.step').exists())
