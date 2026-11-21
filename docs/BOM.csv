@@ -1,0 +1,8 @@
+item,quantity,material,model_or_spec,status
+Main upper saddle with 2 arms and carrier,1,PETG candidate,stl/main.stl,NOT PRINT QUALIFIED
+Lower removable clamp jaw,1,PETG candidate,stl/keeper.stl,NOT PRINT QUALIFIED
+2020 2-opposed-slot extrusion,1,existing metal rail,reference/2020-2O_rail.step,STEP REFERENCE ONLY
+Clamp screws,4,metal,M4 x 14 candidate,MEASURE REAL GRIP
+Clamp threaded inserts,4,metal,M4 heat-set insert matching 5.5mm candidate bore,SELECT VERIFIED INSERT
+Board mounting screws,4,metal,M2.5 x 10 candidate,CONFIRM PCB THREADED HOLES AND BOARD THICKNESS
+Display and PCB,1,existing electronics,Nominal 176 x 80 visible outline only,NO DISPLAY STEP PROVIDED

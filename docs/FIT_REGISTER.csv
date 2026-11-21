@@ -1,0 +1,16 @@
+feature,reference_value_mm,measured_mm,verification,notes
+Rail outside width,20.0,,STEP VERIFIED,Physical Neptune-2 rail unverified
+Rail outside height,20.0,,STEP VERIFIED,Physical Neptune-2 rail unverified
+Rail reference length,120.0,,STEP VERIFIED,User-supplied STEP
+Saddle side clearance,0.35,,PROVISIONAL,Per side
+Top-slot indexing key,disabled,,PROVISIONAL,Off by default until slot measurement
+Display tilt angle,46 degrees,,PROVISIONAL,Photo-derived candidate
+Display face width,176.0,,PROVISIONAL,Verify actual display enclosure
+Display face slope length,80.0,,PROVISIONAL,Verify actual display enclosure
+PCB hole horizontal pitch,56.0,,PROVISIONAL,From x +/-28
+PCB hole slope pitch,31.0,,PROVISIONAL,From S=30 and S=61
+PCB screw nominal,M2.5,,UNVERIFIED,Confirm threaded vs through hole and screw length
+PCB rear tool clearance,6.0,,CAD VERIFIED,All four rear straight-line tool paths clear main stand
+Clamp screw nominal,M4,,UNVERIFIED,Confirm heat-set inserts and head/countersink fit
+Printer full travel,N/A,,UNVERIFIED,Check all motion at printer powered off
+Printed arm strength,N/A,,UNVERIFIED,No FEA/fatigue/load testing

@@ -1,0 +1,186 @@
+{
+  "release": "V001",
+  "generation": "CadQuery from exact uploaded STEP",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "size": 1585,
+      "sha256": "31fc0452ea61257a1d30af43677839b0b32cf3b876edc984582d5e51fdfdfda2"
+    },
+    {
+      "path": "README.md",
+      "size": 9488,
+      "sha256": "6097eabc12753e12d1fe0f4faa0915ace9d54c984d23e3190dc0a4d84c5351b1"
+    },
+    {
+      "path": "config/mount_spec.json",
+      "size": 1815,
+      "sha256": "af4f1295c69b669db69ea647c19c5f698c0543a1ef17e84d0a2f4527b021be0d"
+    },
+    {
+      "path": "docs/BOM.csv",
+      "size": 673,
+      "sha256": "43789d5c0e0b69dae54ebac3bec644467857eea100d4489130f10e35297647f8"
+    },
+    {
+      "path": "docs/FIT_REGISTER.csv",
+      "size": 1137,
+      "sha256": "3c4cd68952a6ef2ab9109277acf5d1cdaf5a60a3404bfbd5cca0996f744f01bf"
+    },
+    {
+      "path": "docs/PROVENANCE.md",
+      "size": 950,
+      "sha256": "a766f71578b384312c662f48590b801bc8f71bff43b3bd6ca82ec813e95ac8b6"
+    },
+    {
+      "path": "docs/validation.json",
+      "size": 3292,
+      "sha256": "deca0e82a9ed51a0e17200b28453cd4b41f5e57d1372b2c5b6da6b16d5a0d3fa"
+    },
+    {
+      "path": "previews/assembly_isometric.png",
+      "size": 37610,
+      "sha256": "ad4dbec0fc5d152dd9a6f9947d67fffd9013272a1762076d1d43febc88b748c4"
+    },
+    {
+      "path": "previews/display_carrier.png",
+      "size": 33774,
+      "sha256": "88d45ed126c66a0a8ccebc8cd1bc313cef47e9412c8c94747b1dbedd96d51a58"
+    },
+    {
+      "path": "previews/engineering_side_profile.png",
+      "size": 159178,
+      "sha256": "2c6420b20e7068395b9b0bb86725fb55fc69fc2d1979c4fd64b2b8e1474f743a"
+    },
+    {
+      "path": "previews/main_frame_only.png",
+      "size": 35482,
+      "sha256": "22d56009ca9464b07bbe23272f5d63760a76fae189f74b38ea6e308570f1343a"
+    },
+    {
+      "path": "previews/rear_screw_access.png",
+      "size": 14423,
+      "sha256": "4658ca97f6d534d16a8568508e5e405579613827a38577433b501a29cff42c6b"
+    },
+    {
+      "path": "previews/saddle_clamp.png",
+      "size": 23467,
+      "sha256": "7924e119647a08b98b93b3a09108c79f6c18e04e3bc2099957ab7c2dcb76a0a5"
+    },
+    {
+      "path": "previews/side_section.png",
+      "size": 40642,
+      "sha256": "3cda2e25156ead1784bea7eeb46ca1b80fc5cf4593de68d4b778e9a9e020e8b8"
+    },
+    {
+      "path": "reference/2020-2O_rail.step",
+      "size": 95444,
+      "sha256": "978f92d68d8ce3ca31434f931257e2c80632c417ef78b4b6f0189b26e5b4c9f0"
+    },
+    {
+      "path": "requirements.txt",
+      "size": 30,
+      "sha256": "ad463980d40883ad543e7d120a4e6dba53ae9f13a37d65fb5551583c28c88861"
+    },
+    {
+      "path": "src/build.py",
+      "size": 25444,
+      "sha256": "30c026b9a0e466f174c79e06b2dc2c03f73848fdedd8e01878aedc6456b38991"
+    },
+    {
+      "path": "step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V001.step",
+      "size": 725419,
+      "sha256": "dd9d3dfea79ef21f2535f43d5a6ca442e66c2f61241881fee0b8b648045632f3"
+    },
+    {
+      "path": "step/M2_5_DISPLAY_SCREWS_REFERENCE.step",
+      "size": 43317,
+      "sha256": "e2fb4b53b7bd2d3d61c83024b49e90fe94b3256b9f88f5bbf127d445b051da27"
+    },
+    {
+      "path": "step/M4_CLAMP_SCREWS_REFERENCE.step",
+      "size": 40039,
+      "sha256": "9e3623208df5f7608e8c5d56c65b76ad3726a989dcf62f7de614350435e2e98e"
+    },
+    {
+      "path": "step/PRINTABLE_PARTS_V001.step",
+      "size": 518337,
+      "sha256": "765f405c0f4e5f0d32d8b6669490f02e32bbe8bb81c3d3203d94462c69ca7514"
+    },
+    {
+      "path": "step/carrier.step",
+      "size": 161024,
+      "sha256": "1f6e587cc67374bcd39e8df40a034b9f18de181fc2dd58ba2b387283a91d97b0"
+    },
+    {
+      "path": "step/keeper.step",
+      "size": 45846,
+      "sha256": "11b567b27fb39d929df8c7017f14d2b5d898561b2b3ead7523f84a980e6242ee"
+    },
+    {
+      "path": "step/left_arm.step",
+      "size": 66456,
+      "sha256": "2d58762cce8e6006b614ad9dc4d42e77c700f0dd4ba84cabe658e8dbe9aeee26"
+    },
+    {
+      "path": "step/main.step",
+      "size": 468322,
+      "sha256": "cdeefa2e96f46072bb9fb0d8b976d15a9350a0232f77817e7e41a152f8e58278"
+    },
+    {
+      "path": "step/rail.step",
+      "size": 94504,
+      "sha256": "75ee575beae2d314279edd60a90c04c02d65d00e03a2d5465d1876968a946f98"
+    },
+    {
+      "path": "step/right_arm.step",
+      "size": 66358,
+      "sha256": "4e151a41d1688c464526c9f96e08f7f0da3afe28886403db699c01cbaa99e6f5"
+    },
+    {
+      "path": "step/screen.step",
+      "size": 16589,
+      "sha256": "47afd47ead4485dfa22cc8d928aaa4dc7e5acfd7e7216a01caa127641dcc1138"
+    },
+    {
+      "path": "step/upper_saddle.step",
+      "size": 45025,
+      "sha256": "d70313702da6f198899b1824c7bb16afbf97a412bcf877172376d7f9d0c085db"
+    },
+    {
+      "path": "stl/carrier.stl",
+      "size": 241284,
+      "sha256": "c6b935cfd6ad8baa144f4f82946adab6a274b0dd13894791484772523841dab3"
+    },
+    {
+      "path": "stl/keeper.stl",
+      "size": 135884,
+      "sha256": "8aec1ca344a5e0381ee8836d0a31adc2d4718678b1711626fa82611589534041"
+    },
+    {
+      "path": "stl/left_arm.stl",
+      "size": 35884,
+      "sha256": "9e7c4469287298f759d550a647cd7f3bcf515e4e0bc71b3b8377212252be81fe"
+    },
+    {
+      "path": "stl/main.stl",
+      "size": 351684,
+      "sha256": "c91f944c7a2e36815e5cfd85e713d6ff1b630c1dae17f92a144b0eab4546cc50"
+    },
+    {
+      "path": "stl/right_arm.stl",
+      "size": 35884,
+      "sha256": "e60ec2e3a2c1b7748c58f8de14e79cf8dd16ef6451246dd21e79b843d35a25c4"
+    },
+    {
+      "path": "stl/upper_saddle.stl",
+      "size": 68684,
+      "sha256": "2ee9acb7fa22a01f9296f4cea5bc058e971e4eb9174291b10b9f9da56589d17b"
+    },
+    {
+      "path": "tests/test_model.py",
+      "size": 3430,
+      "sha256": "8219ba99596fbbc3f489c19bfdc5fd50798b56daeffdf89cff916327c8a2b8f3"
+    }
+  ]
+}
