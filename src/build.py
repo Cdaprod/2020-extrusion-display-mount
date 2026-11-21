@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V010.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V011.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -76,6 +76,44 @@ class Design:
         """Minimum X width of the narrowed, arm-integrated front mounting face."""
         return self.arm_thickness_mm-2*self.arm_front_rail_side_trim_mm
 
+    @property
+    def screw_support_radius_mm(self):
+        """Minimum support radius around each complete rear driver corridor."""
+        return self.board_driver_access_d_mm/2+self.min_screw_envelope_web_mm
+
+    @property
+    def adaptive_profile(self):
+        """YZ envelope strictly derived from actual vertical M3 stations."""
+        lo,hi=self.mounting_stations_s_mm
+        zl=self.path_point(lo)[1]; zh=self.path_point(hi)[1]
+        r=self.screw_support_radius_mm
+        # A screw envelope is preserved BEFORE any corner fillet.
+        lower=zl+self.opening_lower_offset_from_screw_mm
+        upper=zh-self.opening_upper_offset_from_screw_mm
+        clearance=self.opening_transition_clearance_mm
+        if lower<zl+r+clearance or upper>zh-r-clearance:
+            raise ValueError('Opening intersects a required M3 support envelope')
+        if upper-lower<2*self.arm_opening_corner_radius_mm+2:
+            raise ValueError('M3 pitch too small for radiused front service aperture')
+        rear_lower=max(self.arm_opening_rear_bottom_y_mm,
+                       self.arm_front_y_mm+self.arm_opening_front_wall_mm+self.opening_rear_extra_y_mm)
+        rear_upper=max(rear_lower+2,self.arm_opening_rear_top_y_mm)
+        outer_bulge_z=max(self.arm_outer_rear_bulge_z_mm,(lower+upper)/2+self.outer_rear_bulge_margin_mm)
+        top=zh+self.upper_boss_cap_extra_mm
+        # Side-wall rear distance at the roof must preserve a minimum ligament,
+        # not merely avoid coincident boundary coordinates.
+        outer_y_top=self.arm_outer_rear_shoulder_y_mm
+        outer_y_bulge=self.arm_outer_rear_bulge_y_mm
+        fraction=(top-upper)/(top-outer_bulge_z)
+        if not 0<=fraction<=1:
+            raise ValueError('Outer shoulder does not span service aperture roof')
+        exterior_y=outer_y_top+(outer_y_bulge-outer_y_top)*(1-fraction)
+        if exterior_y-rear_upper < self.opening_rear_web_mm:
+            raise ValueError('Rear service aperture cuts into load-bearing sloped web')
+        return dict(bottom_z=lower,top_z=upper,rear_bottom_y=rear_lower,
+                    rear_top_y=rear_upper,outer_bulge_z=outer_bulge_z,
+                    screw_z=(zl,zh),support_radius=r,roof_web_z=zh-upper)
+
     def validate_mount_dimensions(self):
         """M3 centers are constrained inside the actual structural arms."""
         if abs(self.display_angle_deg-90)>1e-6: raise ValueError('Display face must be vertical')
@@ -104,12 +142,20 @@ class Design:
         lo,hi=self.mounting_stations_s_mm
         if not (0<lo<hi<self.display_height_along_slope_mm):
             raise ValueError('Mount holes outside vertical arm region')
+        profile=self.adaptive_profile
         for side in (-1,1):
             service=self.cfg['service_left' if side<0 else 'service_right']
             limit=service['throat_width_mm']/2+self.board_driver_access_d_mm/2+self.min_service_hole_gap_mm
             for st in (lo,hi):
                 if abs(self.path_point(st)[1]-service['throat_center_z_mm'])<limit:
                     raise ValueError('Service notch clips screw bearing material')
+        # Validate BOTH fastener axis envelopes and forward service throat
+        # against the pitch-dependent side opening.
+        zl,zh=profile['screw_z']
+        for z in (zl,zh):
+            for edge in (profile['bottom_z'],profile['top_z']):
+                if abs(z-edge)<self.screw_support_radius_mm+self.opening_transition_clearance_mm:
+                    raise ValueError('Service edge violates M3 material envelope')
         return radial
 
     @property
@@ -211,7 +257,8 @@ class Design:
         z_foot=self.bridge_top-self.arm_saddle_intersection_mm
         # Keep a rounded, compact cap above the upper fastener rather than
         # V010's tall rectangular front tower. Derived from the M3 station.
-        z_top=self.path_point(self.mounting_stations_s_mm[1])[1]+self.upper_boss_cap_extra_mm
+        profile=self.adaptive_profile
+        z_top=profile['screw_z'][1]+self.upper_boss_cap_extra_mm
         back=self.upper_clamp_width_mm/2-self.arm_gusset_saddle_overlap_mm
         root_z=self.upper_clamp_sidewall_bottom_z_mm+self.arm_gusset_bottom_relief_mm
         if not (0<self.arm_gusset_saddle_overlap_mm<self.upper_clamp_width_mm/2):
@@ -223,7 +270,7 @@ class Design:
             (back,z_foot),
             (back,root_z),
             (self.arm_outer_lower_rear_y_mm,z_foot),
-            (self.arm_outer_rear_bulge_y_mm,self.arm_outer_rear_bulge_z_mm),
+            (self.arm_outer_rear_bulge_y_mm,profile['outer_bulge_z']),
             (self.arm_outer_rear_shoulder_y_mm,z_top),
             (self.arm_front_y_mm+self.arm_top_land_mm,z_top),
             (self.arm_front_y_mm+self.arm_top_land_mm,self.arm_front_z_mm),
@@ -291,12 +338,13 @@ class Design:
         """Front-side U service throat (Y~0..20, Z~60..80), rear diagonal intact."""
         if side not in (-1,1):
             raise ValueError('side must be -1 or +1')
-        zlo=self.arm_opening_bottom_z_mm
-        zhi=self.arm_opening_top_z_mm
+        profile=self.adaptive_profile
+        zlo=profile['bottom_z']
+        zhi=profile['top_z']
         front=self.arm_front_y_mm+self.arm_opening_front_wall_mm
         cavity=(cq.Workplane('YZ')
-                .polyline([(front,zlo),(self.arm_opening_rear_bottom_y_mm,zlo),
-                           (self.arm_opening_rear_top_y_mm,zhi),(front,zhi)])
+                .polyline([(front,zlo),(profile['rear_bottom_y'],zlo),
+                           (profile['rear_top_y'],zhi),(front,zhi)])
                 .close().extrude(self.arm_thickness_mm+2)
                 .edges('|X').fillet(self.arm_opening_corner_radius_mm)
                 .val().translate((-1,0,0)))
@@ -519,6 +567,12 @@ class Design:
         report['integral_arm_mount_stations_s_mm']=list(self.mounting_stations_s_mm)
         report['m3_pocket_floor_wall_mm']=round(self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm,4)
         report['m3_pocket_radial_wall_mm']=round(self.validate_mount_dimensions(),4)
+        profile=self.adaptive_profile
+        report['v011_pitch_driven_support_profile']=profile
+        report['v011_required_m3_support_radius_mm']=self.screw_support_radius_mm
+        report['v011_min_screw_web_mm']=self.min_screw_envelope_web_mm
+        report['v011_center_pitch_mm']=self.board_screw_vertical_pitch_mm
+        report['v011_front_opening_bounds_z_mm']=[profile['bottom_z'],profile['top_z']]
         report['v010_front_neck_width_mm']=self.front_neck_width_mm
         report['v010_front_side_trim_mm']=self.arm_front_rail_side_trim_mm
         report['v010_front_draft_depth_mm']=self.arm_front_rail_taper_depth_mm
@@ -532,7 +586,7 @@ class Design:
         report['detached_carrier_count']=0
         report['integral_arm_m3_holes']=4
         report['rear_sheet_removed']=True
-        report['status']='PASS V010: compact tapered front rails, rounded arm profile, four M3 rear-access seats'
+        report['status']='PASS V011: screw-station-driven aperture, roof and rear support web, integral M3 arms'
         return report
 
 
@@ -730,7 +784,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V010 COMPACT-BOSS SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V011 FASTENER-DRIVEN SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -762,10 +816,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V010.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V011.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V010.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V011.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')
