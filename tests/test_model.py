@@ -1,4 +1,4 @@
-"""V015: M3 mounting holes are integral to the actual sculpted arms."""
+"""V016: M3 mounting holes are integral to the actual sculpted arms."""
 import json,sys,unittest
 from pathlib import Path
 import cadquery as cq
@@ -17,7 +17,7 @@ class ModelTests(unittest.TestCase):
 
     def test_integrated_vertical_mount_pitches(self):
         d=self.d
-        self.assertEqual(self.cfg['release'],'V015')
+        self.assertEqual(self.cfg['release'],'V016')
         self.assertFalse(hasattr(d,'carrier'))
         self.assertFalse(hasattr(d,'carrier_rails'))
         self.assertEqual(d.mounting_x_centers_mm,(-39,39))
@@ -81,7 +81,7 @@ class ModelTests(unittest.TestCase):
     def test_screw_pitch_drives_both_opening_edges_and_rear_profile(self):
         d=self.d
         p=d.adaptive_profile
-        self.assertEqual(self.cfg['release'],'V015')
+        self.assertEqual(self.cfg['release'],'V016')
         self.assertGreaterEqual(p['bottom_z']-p['screw_z'][0],
                                 d.compact_tab_half_height_mm)
         self.assertGreaterEqual(p['screw_z'][1]-p['top_z'],
@@ -152,8 +152,8 @@ class ModelTests(unittest.TestCase):
         p=self.d.adaptive_profile
         self.assertAlmostEqual(p['bottom_z'],59.5)
         self.assertAlmostEqual(p['top_z'],91.5)
-        self.assertAlmostEqual(p['rear_bottom_y'],45.0)
-        self.assertAlmostEqual(p['rear_top_y'],36.0)
+        self.assertAlmostEqual(p['rear_bottom_y'],45.05,places=1)
+        self.assertAlmostEqual(p['rear_top_y'],35.89,places=1)
         self.assertGreaterEqual(p['top_slope_rear_web_y'],self.d.v014_min_sloped_spine_web_mm)
         self.assertGreaterEqual(p['lower_slope_rear_web_y'],self.d.v014_min_sloped_spine_web_mm)
         for z,aperture in zip(p['screw_z'],(p['bottom_z'],p['top_z'])):
@@ -161,7 +161,7 @@ class ModelTests(unittest.TestCase):
             self.assertGreaterEqual(clearance,self.d.v014_min_tab_wall_mm+
                                     self.d.v014_tab_edge_allowance_mm)
         bad=dict(self.cfg)
-        bad['arm_opening_rear_bottom_y_mm']=58
+        bad['v016_inner_lip_y_web_mm']=5
         with self.assertRaises(ValueError): Design(bad).validate_mount_dimensions()
 
     def test_v015_four_rear_exit_tool_tunnels_are_unobstructed(self):
@@ -206,10 +206,45 @@ class ModelTests(unittest.TestCase):
         self.assertTrue(self.parts['main'].isValid())
         self.assertEqual(self.d.validate(self.parts)['v014_compact_tabs']['count'],4)
 
-    def test_v015_manufacturing_and_preview_outputs(self):
+    def test_v016_shared_profile_solution_moves_with_fastener_datums(self):
+        d=self.d
+        p=d.v016_profile_solution
+        self.assertEqual(len(p['fasteners_x']),2)
+        self.assertEqual(len(p['fasteners_z']),2)
+        self.assertAlmostEqual(p['outer']['bulge_y'],58,places=5)
+        self.assertAlmostEqual(p['outer']['lower_y'],47,places=5)
+        self.assertAlmostEqual(p['outer']['shoulder_y'],16,places=5)
+        self.assertAlmostEqual(p['outer']['bulge_z'],85.5,places=5)
+        self.assertAlmostEqual(p['opening']['bottom_z'],59.5)
+        self.assertAlmostEqual(p['opening']['top_z'],91.5)
+        # Both contours and the printable saddle now depend on one fastener
+        # pitch datum instead of independently fixed YZ profile coordinates.
+        for offset in (-1,1):
+            altered=dict(self.cfg)
+            altered['board_screw_vertical_pitch_mm']+=offset
+            changed=Design(altered).v016_profile_solution
+            self.assertNotEqual(changed['outer']['bulge_y'],p['outer']['bulge_y'])
+            self.assertNotEqual(changed['outer']['bulge_z'],p['outer']['bulge_z'])
+            self.assertNotEqual(changed['opening']['bottom_z'],p['opening']['bottom_z'])
+            self.assertNotEqual(changed['curves']['nose_y'],p['curves']['nose_y'])
+        altered=dict(self.cfg)
+        altered['mount_hole_center_spacing_mm']=90
+        changed=Design(altered).v016_profile_solution
+        self.assertEqual(changed['fasteners_x'],[-45,45])
+        self.assertEqual(changed['saddle_length'],120)
+
+    def test_v016_rejects_unphysical_profile_offset(self):
+        for field,value in [('v016_inner_lip_y_web_mm',6),
+                            ('v016_outer_bulge_y_from_saddle_pitch_ratio',.3),
+                            ('v016_bulge_z_above_screw_mid_pitch_ratio',1)]:
+            altered=dict(self.cfg);altered[field]=value
+            with self.assertRaises(ValueError):
+                Design(altered).validate_mount_dimensions()
+
+    def test_v016_manufacturing_and_preview_outputs(self):
         for name in ('main.step','left_arm.step','right_arm.step',
-                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V015.step',
-                     'PRINTABLE_PARTS_V015.step','M3_DISPLAY_SCREWS_REFERENCE.step',
+                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V016.step',
+                     'PRINTABLE_PARTS_V016.step','M3_DISPLAY_SCREWS_REFERENCE.step',
                      'WAVESHARE_0820_DATUM_FIXTURE.step'):
             self.assertTrue((ROOT/'step'/name).exists(),name)
         self.assertTrue((ROOT/'stl/main.stl').exists())
