@@ -1,4 +1,4 @@
-# Neptune 2 · Parametric 2020 Extrusion Display Mount · V011
+# Neptune 2 · Parametric 2020 Extrusion Display Mount · V012
 
 **Current design: one integral structural display mount + one removable M4 keeper.** The curved side arms are the vertical PCB mounting rails. There is no intervening carrier, rear display sheet, or transverse screw-tab attachment. All four M3 mounting holes and their rear driver corridors are machined parametrically into the **main structural arm BREP**.
 
@@ -6,9 +6,19 @@ The 20 × 20 × 120 mm two-face-slotted reference extrusion is the original unmo
 
 > **Provisional engineering model:** display, PCB hole coordinates, M3 head type/length, SD slot and USB connector clearance are not physically measured. Do not treat a nominal BREP collision pass as real-world fit or strength approval.
 
-## V011 — M3 fastener-driven structural side profile
+## V012 — unified service opening and hardware datum
 
-V011 fixes the key failure in V010: the M3 screw pitch could change while the service opening and rear load-bearing gusset retained fixed Z boundaries. The vertical stations are now authoritative geometric parents for the **upper and lower service-opening boundaries, rear contour and exterior gusset height**. These changes propagate through both structural arms.
+The V011 opening was made by fusing a rounded quadrilateral pocket to an additional slot-shaped front cutter, producing unwanted shelves and bulbous transitions. V012 generates **one open-front filleted U cutter per arm**, with only the G1-rounded rear corners left visible in the frame. Its lower and upper edges follow the M3 stations and their minimum support envelopes. Front-neck side removal now grows progressively through an eight-millimeter lofted root transition instead of beginning in an abrupt Z=37 mm flat ledge.
+
+**Waveshare reference from uploaded `0820-1.stp`:** BREP cylinder centers at X=-68.9/+45.1 and native Y=-29.9/+29.2 mm. The four circled mounting holes have Ø2.0 cylindrical surfaces and coaxial Ø5.5 cylindrical boss surfaces. Native center pitches are 114.0 × 59.1 mm, offset X=-11.9 mm from the source bounding-box center. See [exact datum manifest](reference/waveshare_0820_1_mounting_datums.json), [fit-status documentation](docs/V012_WAVESHARE_FIT_AND_PROFILE.md), and [Waveshare hole-pattern STEP fixture](step/WAVESHARE_0820_DATUM_FIXTURE.step).
+
+**Critical physical-fit gate:** The published bracket's existing screw pattern remains **78 × 45 mm** and the canonical 2020 rail remains **120 mm long**. Its nominal display plane is also narrower than the STEP source's 208 mm X span. These are unresolved dimensional incompatibilities, not merely fillet errors. The reference model is supplied as a *non-printable datum fixture*, not silently adapted into a bracket. Hardware-registration mode fails closed pending an approved XZ orientation, rail-length/mount load path, boss engagement and connector clearances.
+
+![Source STEP pad datum, independently identified](previews/waveshare_mount_datums.png)
+
+## V012 — M3 fastener-driven structural side profile
+
+V012 fixes the key failure in V010: the M3 screw pitch could change while the service opening and rear load-bearing gusset retained fixed Z boundaries. The vertical stations are now authoritative geometric parents for the **upper and lower service-opening boundaries, rear contour and exterior gusset height**. These changes propagate through both structural arms.
 
 The side aperture is constrained by the Ø7 rear driver passage plus a configurable **4 mm nominal minimum support web**, an additional 2 mm transition allowance, and the corner radius. When a fastener station changes, the opening and upper arm height follow it; when the requested pitch is infeasible, generation fails rather than silently creating unsupported M3 tabs.
 
@@ -17,13 +27,13 @@ The front SD/USB throat center is now *clamped to the adaptive opening interval*
 
 Actual board spacing, SD/USB port geometry and load paths still require physical measurement. The new checks are nominal BREP geometry constraints, not printed strength certification.
 
-See [V011 structural dependency design](docs/V011_SUPPORT_DEPENDENCIES.md).
+See [V012 structural dependency design](docs/V012_SUPPORT_DEPENDENCIES.md).
 
-## V011 — compact, rounded and parametric
+## V012 — compact, rounded and parametric
 
 The structural arms themselves remain the only display carrier. Each front M3 region is narrowed from 16 mm to a **12 mm minimum-width neck** using two parametric drafted side cuts that blend back into the full 16 mm rear structural arm. The upper end now stops 9.5 mm above the upper fastener axis instead of carrying an oversized vertical tab. The side-profile nose, front root and upper cap use analytic tangent arcs; the removable M4 keeper has softened exterior corners. M3 bore/head-seat dimensions, bearing floor, rear tool access, SD/USB opening and keyed extrusion datums are preserved.
 
-See [V011 engineering changes](docs/V011_GEOMETRY.md). Screw positions and actual PCB clearances remain provisional.
+See [V012 engineering changes](docs/V012_GEOMETRY.md). Screw positions and actual PCB clearances remain provisional.
 
 ## Geometry-derived previews
 
@@ -31,27 +41,27 @@ Every image below is rendered from the generated CAD geometry and committed to t
 
 **Complete assembly** — translucent blue rectangle is a provisional display bounding reference, not a printable plate.
 
-![V011 complete assembly and 2020 extrusion](previews/assembly_isometric.png)
+![V012 complete assembly and 2020 extrusion](previews/assembly_isometric.png)
 
 **One-piece structural frame** — both arm faces carry their own M3 screw mounting interfaces.
 
-![V011 one-piece integrated main frame](previews/main_frame_only.png)
+![V012 one-piece integrated main frame](previews/main_frame_only.png)
 
 **Integral M3 mounting and driver access** — these are arm features, not separate rail parts.
 
-![V011 integral display mounting interface](previews/integrated_display_mount.png)
+![V012 integral display mounting interface](previews/integrated_display_mount.png)
 
-![V011 rear M3 driver access and M4 keeper](previews/rear_screw_access.png)
+![V012 rear M3 driver access and M4 keeper](previews/rear_screw_access.png)
 
 **Engineering side profile**, including open front service access and preserved rear slope.
 
-![V011 orthographic side datum](previews/engineering_side_profile.png)
+![V012 orthographic side datum](previews/engineering_side_profile.png)
 
 **Assembly side angle and lower 2020 clamp.**
 
-![V011 side section](previews/side_section.png)
+![V012 side section](previews/side_section.png)
 
-![V011 saddle and removable keeper](previews/saddle_clamp.png)
+![V012 saddle and removable keeper](previews/saddle_clamp.png)
 
 ## Single-piece mounting architecture
 
@@ -59,7 +69,7 @@ The sculpted arms comprise the entire rear PCB mounting structure, tapering from
 
 Each M3 station contains a centered Ø3.4 mm forward through-bore, an internal Ø6.4 mm head seat, and an axial Ø7 mm driver/head passage that continues toward the rear. The forward screw-head bearing floor remains 3.2 mm thick by default (3.0 mm minimum); the radial wall is validated against the complete arm thickness. No rectangular PCB backing plane, separate mounting carrier, rail step, or outboard screw tabs are manufactured.
 
-The side-facing access cutout is parameterized separately for SD and USB service. Its open throat remains approximately Y=0–20 mm and Z=60–80 mm, with an uninterrupted diagonal back rib. To keep both M3 seats out of that open service throat, their temporary vertical coordinates are now S=20 and S=65 mm. **These screw locations are construction candidates, not measurements of your PCB.**
+The front-opening cutter is unified for each arm; SD and USB service corridors are tested separately against the actual 3D cut volume. Its open throat spans the screw-derived U aperture, while the diagonal back rib remains uninterrupted. To keep both M3 seats out of that open service throat, their temporary vertical coordinates are now S=20 and S=65 mm. **These screw locations are construction candidates, not measurements of your PCB.**
 
 | Config key | Default | Purpose |
 |---|---:|---|
@@ -92,13 +102,13 @@ The right-handed coordinate system is X along extrusion/screen width, Y front-to
 |---|---|---|---|
 | **Integrated main frame** | [main.step](step/main.step) | [main.stl](stl/main.stl) | One 3D-printable structural body with four integral M3 pockets |
 | **Removable lower keeper** | [keeper.step](step/keeper.step) | [keeper.stl](stl/keeper.stl) | Second printable body, with M4 clamp channels |
-| Full V011 reference assembly | [assembly](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V011.step) | — | Main + keeper + source rail + screen envelope + screw references |
-| Printable two-body assembly | [main + keeper](step/PRINTABLE_PARTS_V011.step) | — | Only actual intended printed parts |
+| Full V012 reference assembly | [assembly](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V012.step) | — | Main + keeper + source rail + screen envelope + screw references |
+| Printable two-body assembly | [main + keeper](step/PRINTABLE_PARTS_V012.step) | — | Only actual intended printed parts |
 | Arm diagnostics | [left](step/left_arm.step) · [right](step/right_arm.step) | — | Subsolids already included in main; **do not print separately** |
 | 2020 STEP reference | [rail](step/rail.step) | — | Real supplied section, rigidly oriented |
 | Display M3 screw references | [M3 screws](step/M3_DISPLAY_SCREWS_REFERENCE.step) | — | Provisional hardware visualization |
 
-Onshape: import the V011 full assembly STEP with **Y-axis up unchecked** (+Z is up). It provides independent editable solids, but parametric feature history remains in [src/build.py](src/build.py) and [config/mount_spec.json](config/mount_spec.json), not in Onshape's imported STEP feature tree.
+Onshape: import the V012 full assembly STEP with **Y-axis up unchecked** (+Z is up). It provides independent editable solids, but parametric feature history remains in [src/build.py](src/build.py) and [config/mount_spec.json](config/mount_spec.json), not in Onshape's imported STEP feature tree.
 
 ## Regeneration
 
@@ -110,6 +120,6 @@ xvfb-run -a python src/build.py
 python -m unittest discover -s tests -v
 ```
 
-Changes to CAD geometry must commit updated STEP/STL, all rendered previews and [docs/validation.json](docs/validation.json). [V011 integral-arm design contract](docs/V011_INTEGRAL_ARMS.md) distinguishes the screen-facing bore, head-seat shoulder and rear insertion corridor.
+Changes to CAD geometry must commit updated STEP/STL, all rendered previews and [docs/validation.json](docs/validation.json). [V012 integral-arm design contract](docs/V012_INTEGRAL_ARMS.md) distinguishes the screen-facing bore, head-seat shoulder and rear insertion corridor.
 
 **Measure before printing:** actual PCB hole X/Z pitch and thread type, M3 head profile and effective engagement, display/port extents, printer top rail slots and clearances, nozzle/bed motion envelope, torque, load direction and printed-layer strength.
