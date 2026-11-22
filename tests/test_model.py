@@ -24,7 +24,7 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(d.mounting_stations_s_mm,(20,65))
         self.assertAlmostEqual(d.tangent[0],0,places=7)
         self.assertGreaterEqual(d.validate_mount_dimensions(),d.min_screw_head_radial_wall_mm)
-        alt=dict(self.cfg);alt['mount_hole_center_spacing_mm']=76
+        alt=dict(self.cfg);alt['mount_hole_center_spacing_mm']=90
         self.assertNotEqual(Design(alt).mounting_x_centers_mm,d.mounting_x_centers_mm)
         self.assertNotEqual(Design(alt).effective_arm_pitch_mm,d.effective_arm_pitch_mm)
         self.assertNotEqual(Design(alt).effective_saddle_length_mm,d.effective_saddle_length_mm)
@@ -38,7 +38,7 @@ class ModelTests(unittest.TestCase):
         self.assertGreaterEqual(d.mount_pad_axial_thickness_mm-d.board_counterbore_depth_mm,d.min_screw_head_floor_mm)
         for key,value in [('board_counterbore_depth_mm',5),
                           ('board_driver_access_d_mm',13),
-                          ('mount_hole_center_spacing_mm',65),
+                          ('mount_hole_center_spacing_mm',0),
                           ('board_screw_vertical_pitch_mm',18)]:
             bad=dict(self.cfg);bad[key]=value
             with self.assertRaises(ValueError): Design(bad).validate_mount_dimensions()
@@ -90,7 +90,7 @@ class ModelTests(unittest.TestCase):
         alt=dict(self.cfg);alt['board_screw_station_center_mm']=45.0
         q=Design(alt).adaptive_profile
         self.assertNotEqual((p['bottom_z'],p['top_z']),(q['bottom_z'],q['top_z']))
-        alt2=dict(self.cfg);alt2['board_screw_vertical_pitch_mm']=49
+        alt2=dict(self.cfg);alt2['board_screw_vertical_pitch_mm']=43
         q2=Design(alt2).adaptive_profile
         self.assertNotEqual(p['bottom_z'],q2['bottom_z'])
         self.assertNotEqual(p['top_z'],q2['top_z'])
