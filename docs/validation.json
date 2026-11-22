@@ -109,6 +109,7 @@
       "vertical_tangent_mm": 7.68
     },
     "inner_rear_lip_offset_mm": 8.85,
+    "minimum_actual_planar_web_mm": 3.306,
     "arm_center_pitch_mm": 78,
     "saddle_length_mm": 108,
     "hardware_datum_mode": "provisional",
@@ -424,12 +425,7 @@
     "v016_outer_shoulder_y_from_saddle_pitch_ratio": -0.09333333333333332,
     "v016_bulge_z_above_screw_mid_pitch_ratio": 0.2222222222222222,
     "v016_inner_lip_y_web_mm": 8.85,
-    "v016_outer_inner_min_euclidean_web_mm": 3,
-    "v016_profile_stability_sweep_mm": [
-      -1,
-      0,
-      1
-    ],
+    "v016_outer_inner_min_euclidean_web_mm": 2,
     "v016_hardware_datum_mode": "provisional"
   }
 }
