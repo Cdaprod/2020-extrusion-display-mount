@@ -98,25 +98,46 @@ class Design:
         or bearing material from being inferred from the gusset connection.
         The lower gusset remains a separate structural transition behind them.
         """
-        half_h=self.compact_tab_half_height_mm
-        half_w=self.arm_thickness_mm/2
-        front=self.arm_front_y_mm+self.arm_top_land_mm
-        rear=front+self.mount_pad_axial_thickness_mm
-        projection=self.display_standoff_height_mm
-        corner=self.board_mount_tab_corner_radius_mm
+        local=self.mounting_tab_local_profile_mm
         profiles=[]
         for side,x in zip((-1,1),self.mounting_x_centers_mm):
             for z in (self.path_point(s)[1] for s in self.mounting_stations_s_mm):
                 profiles.append({
                     'side':side,'x_center_mm':x,'z_center_mm':z,
-                    'x_min_mm':x-half_w,'x_max_mm':x+half_w,
-                    'z_min_mm':z-half_h,'z_max_mm':z+half_h,
-                    'height_mm':2*half_h,'width_mm':2*half_w,
-                    'bearing_depth_mm':self.mount_pad_axial_thickness_mm,
-                    'front_projection_mm':projection,
-                    'corner_radius_mm':corner,
-                    'radial_bearing_wall_mm':self.v014_min_tab_wall_mm})
+                    'x_min_mm':x-local['width_mm']/2,
+                    'x_max_mm':x+local['width_mm']/2,
+                    'z_min_mm':z-local['height_mm']/2,
+                    'z_max_mm':z+local['height_mm']/2,
+                    **local})
         return tuple(profiles)
+
+    @property
+    def mounting_tab_local_profile_mm(self):
+        """One local envelope for all four screw tabs, independent of gussets."""
+        return {
+            'height_mm':2*self.compact_tab_half_height_mm,
+            'width_mm':self.arm_thickness_mm,
+            'bearing_depth_mm':self.mount_pad_axial_thickness_mm,
+            'front_projection_mm':self.display_standoff_height_mm,
+            'corner_radius_mm':self.board_mount_tab_corner_radius_mm,
+            'radial_bearing_wall_mm':self.v014_min_tab_wall_mm,
+        }
+
+    def validate_mounting_tab_separation(self):
+        """Reject overlapping or insufficiently separated independent tabs."""
+        lo,hi=self.mounting_stations_s_mm
+        height=self.mounting_tab_local_profile_mm['height_mm']
+        gap=hi-lo-height
+        if gap<=0:
+            raise ValueError(
+                f'Independent screw tabs overlap: pitch={hi-lo:.3f} mm, '
+                f'tab height={height:.3f} mm')
+        required=2*self.arm_opening_corner_radius_mm+2
+        if gap<required:
+            raise ValueError(
+                f'Insufficient opening between independent tabs: '
+                f'gap={gap:.3f} mm, required={required:.3f} mm')
+        return gap
 
     @property
     def front_neck_width_mm(self):
@@ -236,6 +257,7 @@ class Design:
 
     def validate_mount_dimensions(self):
         """M3 centers are constrained inside the actual structural arms."""
+        self.validate_mounting_tab_separation()
         if abs(self.display_angle_deg-90)>1e-6: raise ValueError('Display face must be vertical')
         if self.mount_hole_center_spacing_mm<=0 or self.effective_arm_pitch_mm<=0:
             raise ValueError('Invalid symmetric X spacing')
