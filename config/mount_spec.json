@@ -1,5 +1,5 @@
 {
-  "release": "V013",
+  "release": "V014",
   "units": "mm",
   "rail_reference_length_mm": 120,
   "rail_nominal_size_mm": 20,
@@ -44,7 +44,7 @@
   "display_side_window_length_mm": 48,
   "rear_access_tool_diameter_mm": 4.2,
   "nominal_display_reference_thickness_mm": 5,
-  "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured. V009 corrects through-thickness port relief notches that crossed the M3 screw centerlines; retain a continuous central rail spine and integrated screw-bearing pads, with rear-open counterbores. V009 structural correction: no separate carrier. Both arms directly carry the M3 head seats, Ø3.4 through-bores, and rear Ø7 tool corridors; remaining front seat wall 3.2 mm. Provisional stations S=20/65 avoid front opening while measured PCB pattern remains unknown. V010: nominal Ø12 front neck around Ø7 rear driver access, X width tapered into the full structural arm; top excess trimmed to 9.5 mm above upper M3; analytic tangent arcs on the structural outer profile and a 1 mm keeper vertical-edge fillet. Critical bores, mating planes, source rail geometry and floor unchanged; print strength remains unqualified. V011: screw stations determine side opening top/bottom, rear opening contour, and exterior shoulder/bulge height. A full Ø7 tool-path plus 4 mm web envelope drives key planes; roof and lower web are checked against tangentially filleted cuts; no independent fixed Z opening. V012: one filleted U-cutter instead of joined slot2D + rectangle; smoothstep-like lofted front neck root; source-STEP-extracted four-hole datum independently tracked because provisional 78x45 mounting pattern does not physically match 114x59.1 reference. V013: enlarge both arm U windows using screw station ±10 mm, radiused R6 corners, and deeper rear boundary at Y45/Y36 while preserving 8 mm nominal slope spine. All four Ø7 longitudinal driver tunnels are explicitly extended beyond the actual arm rear envelope; M3 seats remain blind with ≥3.2 mm axial bearing floor and screw clearance passages into screen only. Source Waveshare 114×59.1 mm remains a separate unregistered datum.",
+  "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured. V009 corrects through-thickness port relief notches that crossed the M3 screw centerlines; retain a continuous central rail spine and integrated screw-bearing pads, with rear-open counterbores. V009 structural correction: no separate carrier. Both arms directly carry the M3 head seats, Ø3.4 through-bores, and rear Ø7 tool corridors; remaining front seat wall 3.2 mm. Provisional stations S=20/65 avoid front opening while measured PCB pattern remains unknown. V010: nominal Ø12 front neck around Ø7 rear driver access, X width tapered into the full structural arm; top excess trimmed to 9.5 mm above upper M3; analytic tangent arcs on the structural outer profile and a 1 mm keeper vertical-edge fillet. Critical bores, mating planes, source rail geometry and floor unchanged; print strength remains unqualified. V011: screw stations determine side opening top/bottom, rear opening contour, and exterior shoulder/bulge height. A full Ø7 tool-path plus 4 mm web envelope drives key planes; roof and lower web are checked against tangentially filleted cuts; no independent fixed Z opening. V012: one filleted U-cutter instead of joined slot2D + rectangle; smoothstep-like lofted front neck root; source-STEP-extracted four-hole datum independently tracked because provisional 78x45 mounting pattern does not physically match 114x59.1 reference. V013: enlarge both arm U windows using screw station ±10 mm, radiused R6 corners, and deeper rear boundary at Y45/Y36 while preserving 8 mm nominal slope spine. All four Ø7 longitudinal driver tunnels are explicitly extended beyond the actual arm rear envelope; M3 seats remain blind with ≥3.2 mm axial bearing floor and screw clearance passages into screen only. Source Waveshare 114×59.1 mm remains a separate unregistered datum. V014: mounting hole X pitch is sole source of truth for structural-arm X centers and full saddle length (arm thickness + two 7mm side margins). Four independent compact M3 ears each extend only max(driver/head) radius + 2.5mm radial wall + .5mm tolerance above and below the screw station. U opens between ears, and the lower ear is undercut into the gusset with a screw-position-linked relief; cap top follows upper ear. Maintain rear Ø7 exits and 3.2mm counterbore floor. Hardware STEP native pad pattern is not yet fitted to nominal M3 candidate.",
   "require_perpendicular_display": true,
   "require_display_centering": true,
   "arm_outer_rear_shoulder_y_mm": 16,
@@ -143,5 +143,12 @@
   "hardware_reference_fit_required": false,
   "v013_min_sloped_spine_web_mm": 8,
   "v013_enclosed_rear_tool_tunnels": true,
-  "v013_rear_tool_overrun_mm": 5
+  "v013_rear_tool_overrun_mm": 5,
+  "v014_saddle_side_margin_mm": 7,
+  "v014_min_tab_wall_mm": 2.5,
+  "v014_tab_edge_allowance_mm": 0.5,
+  "v014_max_tab_half_height_mm": 8,
+  "v014_lower_ear_root_relief_mm": 6,
+  "v014_undercut_rear_depth_mm": 10,
+  "v014_tab_undercut_end_gap_mm": 0.15
 }
