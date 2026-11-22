@@ -12,6 +12,21 @@ The arm horizontal spacing and keyed 2020 saddle length still follow the mountin
 
 ![V015 rear screw passages](previews/rear_tool_tunnels_oblique.png)
 
+### V015 ready-to-import CAD files
+
+| V015 deliverable | CAD | Purpose |
+|---|---|---|
+| **One-piece sculpted main frame** | [main.step](step/main.step) · [main.stl](stl/main.stl) | Printable one-piece saddle and two integral curved structural arms |
+| **Removable M4 keeper** | [keeper.step](step/keeper.step) · [keeper.stl](stl/keeper.stl) | Second printable part |
+| **Full V015 assembly** | [V015 assembly STEP](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V015.step) | Onshape reference assembly; includes existing 2020 rail and provisional display |
+| **Printable two-body assembly** | [V015 printable STEP](step/PRINTABLE_PARTS_V015.step) | Only the main frame and lower keeper |
+| **Current engineering validation** | [V015 validation report](docs/validation.json) | CAD checks, reference-source provenance and current design parameters |
+| **Parametric source** | [generator](src/build.py) · [parameter file](config/mount_spec.json) | Rebuild at changed fastener pitch and tab positions |
+
+The generated **side view is a plot of the actual main BREP silhouette**, not a decorative concept. Onshape can import the STEP bodies but the driving parameter history lives in the Python generator, not in the imported solids. Use **Z-axis up** (leave the Onshape import option **Y Axis Up** unchecked).
+
+[Full V015 profile construction and validation requirements](docs/V015_CURVED_SIDE_PROFILE.md).
+
 **Fit remains provisional:** The Waveshare reference STEP has Ø2 holes with 114 × 59.1 mm measured pitch. V015 retains the nominal 78 × 45 mm M3 pattern and cannot be treated as a verified hardware fit.
 
 
@@ -29,7 +44,11 @@ Each structural arm has two **short independent screw-mounting ears**, rather th
 
 **Hardware caveat:** The actual Waveshare STEP shows Ø2 holes at 114 × 59.1 mm; nominal candidate M3 screws at 78 × 45 mm are not certified for direct mounting. No forced match or inferred threaded hardware.
 
-# Neptune 2 · Parametric 2020 Extrusion Display Mount · V013
+## Archived design history — V013 and earlier
+
+The material below documents previous revisions; the current manufacturing files and specification are linked above.
+
+### Neptune 2 · Parametric 2020 Extrusion Display Mount · V013
 
 ## V013 — expanded curved U arms and enclosed rear-driver access
 
