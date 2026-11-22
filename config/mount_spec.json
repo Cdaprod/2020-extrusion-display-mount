@@ -141,14 +141,14 @@
   "service_cutter_front_overshoot_mm": 18,
   "hardware_reference_manifest_path": "reference/waveshare_0820_1_mounting_datums.json",
   "hardware_reference_fit_required": false,
-  "v013_min_sloped_spine_web_mm": 8,
-  "v013_enclosed_rear_tool_tunnels": true,
-  "v013_rear_tool_overrun_mm": 5,
   "v014_saddle_side_margin_mm": 7,
   "v014_min_tab_wall_mm": 2.5,
   "v014_tab_edge_allowance_mm": 0.5,
   "v014_max_tab_half_height_mm": 8,
   "v014_lower_ear_root_relief_mm": 6,
   "v014_undercut_rear_depth_mm": 10,
-  "v014_tab_undercut_end_gap_mm": 0.15
+  "v014_tab_undercut_end_gap_mm": 0.15,
+  "v014_min_sloped_spine_web_mm": 8,
+  "v014_enclosed_rear_tool_tunnels": true,
+  "v014_rear_tool_overrun_mm": 5
 }
