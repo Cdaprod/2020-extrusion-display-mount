@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V012.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V013.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -82,6 +82,12 @@ class Design:
         return self.board_driver_access_d_mm/2+self.min_screw_envelope_web_mm
 
     @property
+    def rib_lower_spine_start_z(self):
+        # Exterior rear diagonal begins at the saddle foot; no fixed opening
+        # station may assume the foot remains at the V012 nominal height.
+        return self.bridge_top-self.arm_saddle_intersection_mm
+
+    @property
     def adaptive_profile(self):
         """YZ envelope strictly derived from actual vertical M3 stations."""
         lo,hi=self.mounting_stations_s_mm
@@ -109,12 +115,24 @@ class Design:
         if not 0<=fraction<=1:
             raise ValueError('Outer shoulder does not span service aperture roof')
         exterior_y=outer_y_bulge+(outer_y_top-outer_y_bulge)*fraction
-        if exterior_y-rear_upper < self.opening_rear_web_mm:
+        if exterior_y-rear_upper < max(self.opening_rear_web_mm,
+                                         self.v013_min_sloped_spine_web_mm):
             raise ValueError('Rear service aperture cuts into load-bearing sloped web')
+        # At the lower obround end, the rear spine approaches the long outer
+        # bulge. Constrain it against the actual outside YZ stations at that Z.
+        outer_lower_z=self.rib_lower_spine_start_z
+        bottom_fraction=(lower-outer_lower_z)/(outer_bulge_z-outer_lower_z)
+        if not 0<=bottom_fraction<=1:
+            raise ValueError('Rear opening bottom outside support spine span')
+        exterior_lower=(self.arm_outer_lower_rear_y_mm+
+                        (self.arm_outer_rear_bulge_y_mm-self.arm_outer_lower_rear_y_mm)*bottom_fraction)
+        if exterior_lower-rear_lower < self.v013_min_sloped_spine_web_mm:
+            raise ValueError('Rear opening bottom cuts into load-bearing diagonal web')
         return dict(bottom_z=lower,top_z=upper,rear_bottom_y=rear_lower,
                     rear_top_y=rear_upper,outer_bulge_z=outer_bulge_z,
                     screw_z=(zl,zh),support_radius=r,roof_web_z=zh-upper,
-                    top_slope_rear_web_y=exterior_y-rear_upper)
+                    top_slope_rear_web_y=exterior_y-rear_upper,
+                    lower_slope_rear_web_y=exterior_lower-rear_lower)
 
     def validate_mount_dimensions(self):
         """M3 centers are constrained inside the actual structural arms."""
@@ -131,6 +149,8 @@ class Design:
             raise ValueError('V010 upper curved tip too close to M3 access bore')
         if radial<self.min_screw_head_radial_wall_mm:
             raise ValueError('M3 driver passage exits the structural arm')
+        if self.v013_rear_tool_overrun_mm<=0:
+            raise ValueError('Rear tool overrun must extend beyond outer spine')
         if self.board_driver_access_d_mm<self.board_screw_head_access_d_mm:
             raise ValueError('Rear passage cannot admit M3 screw head')
         if self.board_screw_head_access_d_mm<self.board_screw_head_diameter_mm+self.head_pocket_diametral_clearance_mm:
@@ -433,8 +453,14 @@ class Design:
                      (mx,face_y-self.display_standoff_height_mm-1,z),(0,1,0))
             seat=cyl(self.board_screw_head_access_d_mm/2,self.board_counterbore_depth_mm+.02,
                      (mx,face_y+floor-.01,z),(0,1,0))
-            driver=cyl(self.board_driver_access_d_mm/2,self.board_driver_access_length_mm,
-                       (mx,face_y+self.mount_pad_axial_thickness_mm,z),(0,1,0))
+            # A true rear-entry tunnel is extended beyond the ACTUAL exterior,
+            # not stopped at an arbitrary historical fixed tool length.
+            rear_outer=arm.BoundingBox().ymax
+            start_y=face_y+self.mount_pad_axial_thickness_mm
+            length=max(self.board_driver_access_length_mm,
+                       rear_outer-start_y+self.v013_rear_tool_overrun_mm)
+            driver=cyl(self.board_driver_access_d_mm/2,length,
+                       (mx,start_y,z),(0,1,0))
             arm=arm.cut(bore).cut(seat).cut(driver)
         return check_solid(('left' if side<0 else 'right')+'_integral_arm',arm.clean())
 
@@ -615,6 +641,20 @@ class Design:
             'approved_to_print_for_hardware_fit':False}
         if self.hardware_reference_fit_required:
             raise ValueError('Waveshare STEP native hole datum is not registered to 2020 saddle; physical-fit mode cannot pass')
+        report['v013_deeper_u_opening']={
+            'lower_z_mm':profile['bottom_z'],
+            'upper_z_mm':profile['top_z'],
+            'rear_lower_y_mm':profile['rear_bottom_y'],
+            'rear_upper_y_mm':profile['rear_top_y'],
+            'corner_radius_mm':self.arm_opening_corner_radius_mm,
+            'top_rear_spine_web_mm':round(profile['top_slope_rear_web_y'],4),
+            'lower_rear_spine_web_mm':round(profile['lower_slope_rear_web_y'],4)}
+        report['v013_rear_driver_tunnels']={
+            'count':4,
+            'diameter_mm':self.board_driver_access_d_mm,
+            'minimum_exit_overrun_mm':self.v013_rear_tool_overrun_mm,
+            'type':'enclosed round axial passages where surrounding solid exists',
+            'bearing_floor_mm':round(self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm,4)}
         report['v011_pitch_driven_support_profile']=profile
         report['v011_required_m3_support_radius_mm']=self.screw_support_radius_mm
         report['v011_min_screw_web_mm']=self.min_screw_envelope_web_mm
@@ -633,7 +673,7 @@ class Design:
         report['detached_carrier_count']=0
         report['integral_arm_m3_holes']=4
         report['rear_sheet_removed']=True
-        report['status']='PASS V012: unified U aperture and tapered arm-root relief; hardware datum not yet registered'
+        report['status']='PASS V013: enlarged U arm apertures, retained minimum spine web, four rear-exit M3 tool tunnels; Waveshare pad datum unregistered'
         return report
 
 
@@ -657,7 +697,7 @@ def waveshare_mount_datum_fixture(d):
 
 
 def render_waveshare_datum(d,output):
-    """Auditable plot of native STEP-hole datum vs unregistered V012 proposal."""
+    """Auditable plot of native STEP-hole datum vs unregistered V013 proposal."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -675,7 +715,7 @@ def render_waveshare_datum(d,output):
         ax.text(x+2,y+(3 if y>0 else -4),f'({x:g}, {y:g})',fontsize=8)
     ax.plot([],[],'o',color='#1d4ed8',label='Source STEP: four circled hole centers')
     ax.set_xlim(-112,112);ax.set_ylim(-47,47);ax.set_aspect('equal')
-    ax.set_title('Waveshare 0820-1 STEP / extracted four-hole datum — V012',weight='bold')
+    ax.set_title('Waveshare 0820-1 STEP / extracted four-hole datum — V013',weight='bold')
     ax.set_xlabel('Native STEP X / mm');ax.set_ylabel('Native STEP Y / mm')
     ax.text(-103,-43,'Measured: X pitch 114, Y pitch 59.1 mm. Bracket config still 78 × 45; NOT FIT-CERTIFIED.',
             fontsize=9,color='#991b1b')
@@ -871,7 +911,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V012 FASTENER-DRIVEN SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V013 FASTENER-DRIVEN SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -906,10 +946,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V012.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V013.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V012.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V013.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')

@@ -1,4 +1,4 @@
-"""V012: M3 mounting holes are integral to the actual sculpted arms."""
+"""V013: M3 mounting holes are integral to the actual sculpted arms."""
 import json,sys,unittest
 from pathlib import Path
 import cadquery as cq
@@ -17,7 +17,7 @@ class ModelTests(unittest.TestCase):
 
     def test_integrated_vertical_mount_pitches(self):
         d=self.d
-        self.assertEqual(self.cfg['release'],'V012')
+        self.assertEqual(self.cfg['release'],'V013')
         self.assertFalse(hasattr(d,'carrier'))
         self.assertFalse(hasattr(d,'carrier_rails'))
         self.assertEqual(d.mounting_x_centers_mm,(-39,39))
@@ -61,7 +61,7 @@ class ModelTests(unittest.TestCase):
             self.assertLess(result[key],.01)
         self.assertEqual(sum(k.startswith('rear_tool_clearance_') for k in result),4)
 
-    def test_v012_boss_trimming_is_constrained(self):
+    def test_v013_boss_trimming_is_constrained(self):
         d=self.d
         self.assertAlmostEqual(d.front_neck_width_mm,12.0)
         self.assertAlmostEqual(d.validate_mount_dimensions(),2.5)
@@ -80,7 +80,7 @@ class ModelTests(unittest.TestCase):
     def test_screw_pitch_drives_both_opening_edges_and_rear_profile(self):
         d=self.d
         p=d.adaptive_profile
-        self.assertEqual(self.cfg['release'],'V012')
+        self.assertEqual(self.cfg['release'],'V013')
         self.assertGreaterEqual(p['bottom_z']-p['screw_z'][0],
                                 d.screw_support_radius_mm+d.opening_transition_clearance_mm)
         self.assertGreaterEqual(p['screw_z'][1]-p['top_z'],
@@ -106,7 +106,7 @@ class ModelTests(unittest.TestCase):
         self.assertGreaterEqual(p['outer_bulge_z'],self.d.arm_outer_rear_bulge_z_mm)
         self.assertGreaterEqual(p['top_slope_rear_web_y'],self.d.opening_rear_web_mm)
 
-    def test_v012_unified_front_service_cutter_is_one_solid(self):
+    def test_v013_unified_front_service_cutter_is_one_solid(self):
         for side in (-1,1):
             cut=self.d.arm_service_opening(side)
             self.assertEqual(len(cut.Solids()),1)
@@ -116,7 +116,7 @@ class ModelTests(unittest.TestCase):
                             self.d.rib_workplane().extrude(self.d.arm_thickness_mm).val().Volume())
         self.assertTrue(self.d.unified_front_u_opening)
 
-    def test_v012_source_step_hole_centers_are_kept_separate_from_nominal_mount(self):
+    def test_v013_source_step_hole_centers_are_kept_separate_from_nominal_mount(self):
         fixture=self.d.validate(self.parts)['waveshare_step_mount_reference']
         self.assertEqual(fixture['measured_x_pitch_mm'],114)
         self.assertEqual(fixture['measured_y_pitch_mm'],59.1)
@@ -125,17 +125,48 @@ class ModelTests(unittest.TestCase):
         self.assertFalse(fixture['registered_to_bracket'])
         self.assertTrue(__import__('pathlib').Path(ROOT/'reference/waveshare_0820_1_mounting_datums.json').exists())
 
-    def test_v012_smooth_root_blend_stays_clear_of_lowest_m3(self):
+    def test_v013_smooth_root_blend_stays_clear_of_lowest_m3(self):
         self.assertGreater(self.d.front_neck_blend_height_mm,0)
         p=self.d.adaptive_profile
         self.assertLess(self.d.arm_front_z_mm+self.d.arm_front_neck_start_above_datum_mm+
                         self.d.front_neck_blend_height_mm,p['screw_z'][0]-self.d.board_driver_access_d_mm/2)
         self.assertTrue(self.d.arm(-1).isValid())
 
-    def test_v012_manufacturing_and_preview_outputs(self):
+    def test_v013_slimmer_arm_opening_without_removing_screw_web(self):
+        p=self.d.adaptive_profile
+        self.assertAlmostEqual(p['bottom_z'],63.0)
+        self.assertAlmostEqual(p['top_z'],88.0)
+        self.assertAlmostEqual(p['rear_bottom_y'],45.0)
+        self.assertAlmostEqual(p['rear_top_y'],36.0)
+        self.assertGreaterEqual(p['top_slope_rear_web_y'],self.d.v013_min_sloped_spine_web_mm)
+        self.assertGreaterEqual(p['lower_slope_rear_web_y'],self.d.v013_min_sloped_spine_web_mm)
+        for z,aperture in zip(p['screw_z'],(p['bottom_z'],p['top_z'])):
+            clearance=abs(z-aperture)-self.d.board_driver_access_d_mm/2
+            self.assertGreaterEqual(clearance,self.d.min_screw_envelope_web_mm+
+                                    self.d.opening_transition_clearance_mm)
+        bad=dict(self.cfg)
+        bad['arm_opening_rear_bottom_y_mm']=54
+        with self.assertRaises(ValueError): Design(bad).validate_mount_dimensions()
+
+    def test_v013_four_rear_exit_tool_tunnels_are_unobstructed(self):
+        d=self.d
+        for side in (-1,1):
+            arm=self.parts['left_arm' if side<0 else 'right_arm']
+            x=d.mounting_x_centers_mm[0 if side<0 else 1]
+            for st in d.mounting_stations_s_mm:
+                z=d.path_point(st)[1]
+                y0=d.arm_front_y_mm+d.arm_top_land_mm+d.mount_pad_axial_thickness_mm
+                far=max(d.board_driver_access_length_mm,
+                        arm.BoundingBox().ymax-y0+d.v013_rear_tool_overrun_mm)
+                probe=cq.Solid.makeCylinder(d.board_driver_access_d_mm/2,far,
+                                            cq.Vector(x,y0,z),cq.Vector(0,1,0))
+                self.assertLess(arm.intersect(probe).Volume(),0.02)
+                self.assertGreater(y0+far,arm.BoundingBox().ymax+d.v013_rear_tool_overrun_mm-0.001)
+
+    def test_v013_manufacturing_and_preview_outputs(self):
         for name in ('main.step','left_arm.step','right_arm.step',
-                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V012.step',
-                     'PRINTABLE_PARTS_V012.step','M3_DISPLAY_SCREWS_REFERENCE.step',
+                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V013.step',
+                     'PRINTABLE_PARTS_V013.step','M3_DISPLAY_SCREWS_REFERENCE.step',
                      'WAVESHARE_0820_DATUM_FIXTURE.step'):
             self.assertTrue((ROOT/'step'/name).exists(),name)
         self.assertTrue((ROOT/'stl/main.stl').exists())
