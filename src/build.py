@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V015.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V016.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -106,6 +106,38 @@ class Design:
         return self.bridge_top-self.arm_saddle_intersection_mm
 
     @property
+    def v016_outer_controls(self):
+        """YZ load-path controls from two M3 centers and fixed saddle bearing datum.
+
+        The lower rear root is grounded to the saddle. Rearward projections
+        scale with screw pitch instead of being independently located at
+        historical absolute Y coordinates. The three ratios are reference-
+        geometry styling parameters, never additional fastener datums.
+        """
+        pitch=self.board_screw_vertical_pitch_mm
+        if pitch<=0 or self.v016_reference_vertical_pitch_mm<=0:
+            raise ValueError('Invalid vertical fastener pitch or normalization')
+        lo,hi=self.mounting_stations_s_mm
+        zl,zh=self.path_point(lo)[1],self.path_point(hi)[1]
+        center_z=(zl+zh)/2
+        back=self.upper_clamp_width_mm/2-self.arm_gusset_saddle_overlap_mm
+        # Normalize against the canonical V015 screw pattern, then scale the
+        # reference-profile Y offsets consistently for any updated hole pitch.
+        pitch_scale=pitch/self.v016_reference_vertical_pitch_mm
+        lower=back+self.v016_reference_vertical_pitch_mm*pitch_scale*self.v016_outer_lower_rear_y_from_saddle_pitch_ratio
+        bulge=back+pitch*self.v016_outer_bulge_y_from_saddle_pitch_ratio
+        shoulder=back+pitch*self.v016_outer_shoulder_y_from_saddle_pitch_ratio
+        bulge_z=center_z+pitch*self.v016_bulge_z_above_screw_mid_pitch_ratio
+        top=zh+self.compact_tab_half_height_mm
+        if not (self.rib_lower_spine_start_z<zl<bulge_z<top):
+            raise ValueError('Screw stations create invalid structural rear spine elevation')
+        if not (lower>back+12 and bulge>lower+2 and shoulder<bulge):
+            raise ValueError('Screw pitch creates folded rear structural profile')
+        return dict(lower_y=lower,bulge_y=bulge,shoulder_y=shoulder,
+                    bulge_z=bulge_z,top_z=top,
+                    saddle_back_y=back,lower_screw_z=zl,upper_screw_z=zh)
+
+    @property
     def adaptive_profile(self):
         """YZ envelope strictly derived from actual vertical M3 stations."""
         lo,hi=self.mounting_stations_s_mm
@@ -125,38 +157,49 @@ class Design:
             raise ValueError('M3 vertical pitch too short for two separated mounting ears')
         if upper-lower<2*self.arm_opening_corner_radius_mm+2:
             raise ValueError('M3 pitch too small for radiused front service aperture')
-        rear_lower=max(self.arm_opening_rear_bottom_y_mm,
-                       self.arm_front_y_mm+self.arm_opening_front_wall_mm+self.opening_rear_extra_y_mm)
-        rear_upper=max(self.arm_front_y_mm+self.arm_opening_front_wall_mm+4,
-                       min(self.arm_opening_rear_top_y_mm,rear_lower-2))
-        outer_bulge_z=max(self.arm_outer_rear_bulge_z_mm,(lower+upper)/2+self.outer_rear_bulge_margin_mm)
-        top=zh+self.compact_tab_half_height_mm
-        # Side-wall rear distance at the roof must preserve a minimum ligament,
-        # not merely avoid coincident boundary coordinates.
-        outer_y_top=self.arm_outer_rear_shoulder_y_mm
-        outer_y_bulge=self.arm_outer_rear_bulge_y_mm
+        outer=self.v016_outer_controls
+        outer_bulge_z=outer['bulge_z']
+        top=outer['top_z']
+        if not (self.rib_lower_spine_start_z<lower<upper<top):
+            raise ValueError('M3 ear interval outside the load-bearing arm')
         fraction=(upper-outer_bulge_z)/(top-outer_bulge_z)
         if not 0<=fraction<=1:
-            raise ValueError('Outer shoulder does not span service aperture roof')
-        exterior_y=outer_y_bulge+(outer_y_top-outer_y_bulge)*fraction
-        if exterior_y-rear_upper < max(self.opening_rear_web_mm,
-                                         self.v014_min_sloped_spine_web_mm):
-            raise ValueError('Rear service aperture cuts into load-bearing sloped web')
-        # At the lower obround end, the rear spine approaches the long outer
-        # bulge. Constrain it against the actual outside YZ stations at that Z.
-        outer_lower_z=self.rib_lower_spine_start_z
-        bottom_fraction=(lower-outer_lower_z)/(outer_bulge_z-outer_lower_z)
-        if not 0<=bottom_fraction<=1:
-            raise ValueError('Rear opening bottom outside support spine span')
-        exterior_lower=(self.arm_outer_lower_rear_y_mm+
-                        (self.arm_outer_rear_bulge_y_mm-self.arm_outer_lower_rear_y_mm)*bottom_fraction)
-        if exterior_lower-rear_lower < self.v014_min_sloped_spine_web_mm:
-            raise ValueError('Rear opening bottom cuts into load-bearing diagonal web')
+            raise ValueError('Upper screw/ear exceeds rear structural shoulder span')
+        exterior_y=outer['bulge_y']+(outer['shoulder_y']-outer['bulge_y'])*fraction
+        lower_fraction=(lower-self.rib_lower_spine_start_z)/(outer_bulge_z-self.rib_lower_spine_start_z)
+        if not 0<=lower_fraction<=1:
+            raise ValueError('Lower screw/ear outside rear gusset span')
+        exterior_lower=outer['lower_y']+(outer['bulge_y']-outer['lower_y'])*lower_fraction
+        # Interior endpoints are no longer absolute Y coordinates. Each is
+        # inset from the exterior station that derives from the screw centers.
+        rear_lower=exterior_lower-self.v016_inner_lip_y_web_mm
+        rear_upper=exterior_y-self.v016_inner_lip_y_web_mm
+        required_web=max(self.opening_rear_web_mm,self.v014_min_sloped_spine_web_mm)
+        if self.v016_inner_lip_y_web_mm<required_web:
+            raise ValueError('Profile offset cuts into required rear web')
+        if rear_lower<=self.arm_front_y_mm+self.mount_pad_axial_thickness_mm:
+            raise ValueError('Insufficient lower inner-curve reach behind screw head')
+        if rear_upper<=self.arm_front_y_mm+self.mount_pad_axial_thickness_mm:
+            raise ValueError('Insufficient upper inner-curve reach behind screw head')
+        if rear_upper>=rear_lower-2:
+            raise ValueError('Interior curve lip geometry inverted')
         return dict(bottom_z=lower,top_z=upper,rear_bottom_y=rear_lower,
                     rear_top_y=rear_upper,outer_bulge_z=outer_bulge_z,
                     screw_z=(zl,zh),support_radius=r,roof_web_z=zh-upper,
                     top_slope_rear_web_y=exterior_y-rear_upper,
                     lower_slope_rear_web_y=exterior_lower-rear_lower)
+
+    @property
+    def v016_profile_solution(self):
+        """Unified, inspectable side-profile solution for XZ and YZ projections."""
+        return dict(
+            fasteners_x=list(self.mounting_x_centers_mm),
+            fasteners_z=list(self.adaptive_profile['screw_z']),
+            mounting_ears=self.compact_tab_half_height_mm,
+            outer=self.v016_outer_controls,
+            opening=self.adaptive_profile,
+            curves=self.v015_inner_profile,
+            saddle_length=self.effective_saddle_length_mm)
 
     def validate_mount_dimensions(self):
         """M3 centers are constrained inside the actual structural arms."""
@@ -309,23 +352,24 @@ class Design:
     def rib_profile_stations(self):
         """V006: exterior YZ wire includes rear diagonal saddle-to-arm gusset."""
         z_foot=self.bridge_top-self.arm_saddle_intersection_mm
+        outer=self.v016_outer_controls
         # Keep a rounded, compact cap above the upper fastener rather than
         # V010's tall rectangular front tower. Derived from the M3 station.
         profile=self.adaptive_profile
-        z_top=profile['screw_z'][1]+self.compact_tab_half_height_mm
-        back=self.upper_clamp_width_mm/2-self.arm_gusset_saddle_overlap_mm
+        z_top=outer['top_z']
+        back=outer['saddle_back_y']
         root_z=self.upper_clamp_sidewall_bottom_z_mm+self.arm_gusset_bottom_relief_mm
         if not (0<self.arm_gusset_saddle_overlap_mm<self.upper_clamp_width_mm/2):
             raise ValueError("Invalid rear saddle overlap")
-        if not (root_z<self.bridge_bottom-3 and self.arm_outer_lower_rear_y_mm>back+12):
+        if not (root_z<self.bridge_bottom-3 and outer['lower_y']>back+12):
             raise ValueError("Exterior rear gusset geometry invalid")
         return [
             (-self.upper_clamp_width_mm/2,z_foot),
             (back,z_foot),
             (back,root_z),
-            (self.arm_outer_lower_rear_y_mm,z_foot),
-            (self.arm_outer_rear_bulge_y_mm,profile['outer_bulge_z']),
-            (self.arm_outer_rear_shoulder_y_mm,z_top),
+            (outer['lower_y'],z_foot),
+            (outer['bulge_y'],outer['bulge_z']),
+            (outer['shoulder_y'],z_top),
             (self.arm_front_y_mm+self.arm_top_land_mm,z_top),
             (self.arm_front_y_mm+self.arm_top_land_mm,self.arm_front_z_mm),
             (-self.upper_clamp_width_mm/2,z_foot),
@@ -397,8 +441,9 @@ class Design:
         z1=p['outer_bulge_z']
         if not z0<zm<z1:
             raise ValueError('V015 opening nose must lie on lower rear spine')
-        exterior=self.arm_outer_lower_rear_y_mm+(zm-z0)/(z1-z0)*(
-            self.arm_outer_rear_bulge_y_mm-self.arm_outer_lower_rear_y_mm)
+        outer=self.v016_outer_controls
+        exterior=outer['lower_y']+(zm-z0)/(z1-z0)*(
+            outer['bulge_y']-outer['lower_y'])
         nose=exterior-self.v015_rear_spine_web_mm
         upper=p['rear_top_y']
         lower=p['rear_bottom_y']
@@ -435,6 +480,43 @@ class Design:
             cq.Edge.makeLine(point(upper,hi),point(entry,hi)),
             cq.Edge.makeLine(point(entry,hi),point(entry,lo))]
 
+    def v016_minimum_curved_spine_distance_mm(self):
+        """Minimum planar (YZ) distance from curved aperture to true outer wire.
+
+        Unlike the historical same-Z Y offset, this measures the actual
+        Euclidean shortest distance to the line/arc exterior. It catches
+        narrowing where the rear shoulder is strongly sloped.
+        """
+        inner_edges=self.v015_inner_boundary_edges()[1:3]
+        profile=self.v015_inner_profile
+        exterior=[]
+        for edge in self.rib_workplane().wire().val().Edges():
+            count=max(8,math.ceil(edge.Length()/0.5))
+            points=[edge.positionAt(i/count) for i in range(count+1)]
+            exterior.extend(zip(points[:-1],points[1:]))
+        minimum=float('inf')
+        for edge in inner_edges:
+            count=max(16,math.ceil(edge.Length()/0.35))
+            for i in range(count+1):
+                p=edge.positionAt(i/count)
+                for a,b in exterior:
+                    # Only the outside load-bearing spine, not the front seat,
+                    # is relevant to the web between curved contours.
+                    if max(a.y,b.y)<profile['rear_top_y']-4:
+                        continue
+                    if max(a.z,b.z)<profile['bottom_z']-8 or min(a.z,b.z)>profile['top_z']+8:
+                        continue
+                    dy=b.y-a.y; dz=b.z-a.z
+                    length_squared=dy*dy+dz*dz
+                    if length_squared<1e-12:
+                        continue
+                    t=max(0,min(1,((p.y-a.y)*dy+(p.z-a.z)*dz)/length_squared))
+                    distance=math.hypot(p.y-(a.y+t*dy),p.z-(a.z+t*dz))
+                    minimum=min(minimum,distance)
+        if not math.isfinite(minimum):
+            raise ValueError('Cannot measure real outer-to-inner side-profile web')
+        return minimum
+
     def arm_service_opening(self,side):
         """V015: single curved front-open recess, not a box plus capsule."""
         if side not in (-1,1):
@@ -448,18 +530,21 @@ class Design:
                 if at.z<=self.adaptive_profile['outer_bulge_z']:
                     bottom_z=self.rib_lower_spine_start_z
                     top_z=self.adaptive_profile['outer_bulge_z']
-                    outside=self.arm_outer_lower_rear_y_mm+(
+                    outside=self.v016_outer_controls['lower_y']+(
                         (at.z-bottom_z)/(top_z-bottom_z))*(
-                        self.arm_outer_rear_bulge_y_mm-self.arm_outer_lower_rear_y_mm)
+                        self.v016_outer_controls['bulge_y']-self.v016_outer_controls['lower_y'])
                 else:
                     bottom_z=self.adaptive_profile['outer_bulge_z']
                     top_z=self.adaptive_profile['screw_z'][1]+self.compact_tab_half_height_mm
-                    outside=self.arm_outer_rear_bulge_y_mm+(
+                    outside=self.v016_outer_controls['bulge_y']+(
                         (at.z-bottom_z)/(top_z-bottom_z))*(
-                        self.arm_outer_rear_shoulder_y_mm-self.arm_outer_rear_bulge_y_mm)
+                        self.v016_outer_controls['shoulder_y']-self.v016_outer_controls['bulge_y'])
                 min_web=min(min_web,outside-at.y)
         if min_web<self.v015_min_sampled_rear_web_mm:
             raise ValueError(f'V015 curvature intrudes on rear spine: {min_web:.2f} mm')
+        minimum=self.v016_minimum_curved_spine_distance_mm()
+        if minimum<self.v016_outer_inner_min_euclidean_web_mm:
+            raise ValueError(f'V016 true planar spine web too thin: {minimum:.3f} mm')
         wire=cq.Wire.assembleEdges(edges)
         cutter=cq.Solid.extrudeLinear(wire,[],cq.Vector(self.arm_thickness_mm+2,0,0))
         return check_solid('v015_curved_g1_front_opening',
@@ -580,7 +665,7 @@ class Design:
         self.validate_mount_dimensions()
         clamp=self.upper_clamp()
         la,ra=self.arm(-1),self.arm(1)
-        tie_y=self.arm_outer_lower_rear_y_mm-9
+        tie_y=self.v016_outer_controls['lower_y']-9
         cross=block(-self.effective_arm_pitch_mm/2-self.arm_thickness_mm/2,
                     tie_y,self.bridge_top,
                     self.effective_arm_pitch_mm+self.arm_thickness_mm,8,9)
@@ -713,6 +798,19 @@ class Design:
         report['mount_hole_center_spacing_mm']=self.mount_hole_center_spacing_mm
         report['support_arm_center_spacing_mm']=self.effective_arm_pitch_mm
         report['effective_saddle_length_mm']=self.effective_saddle_length_mm
+        report['v016_constraint_solution']={
+            'screw_x_centers_mm':list(self.mounting_x_centers_mm),
+            'screw_z_centers_mm':list(self.adaptive_profile['screw_z']),
+            'short_mount_tab_half_height_mm':self.compact_tab_half_height_mm,
+            'outer_profile_controls_mm':self.v016_outer_controls,
+            'inner_profile_controls_mm':self.v015_inner_profile,
+            'inner_rear_lip_offset_mm':self.v016_inner_lip_y_web_mm,
+            'minimum_actual_planar_web_mm':round(self.v016_minimum_curved_spine_distance_mm(),3),
+            'arm_center_pitch_mm':self.effective_arm_pitch_mm,
+            'saddle_length_mm':self.effective_saddle_length_mm,
+            'hardware_datum_mode':self.v016_hardware_datum_mode,
+            'two_short_ears_per_arm':True
+        }
         report['v015_curved_side_profile']={
             'method':'two G1-tangent cubic Bezier arcs per structural arm',
             'inner_section_mm':self.v015_inner_profile,
@@ -790,7 +888,7 @@ class Design:
         report['detached_carrier_count']=0
         report['integral_arm_m3_holes']=4
         report['rear_sheet_removed']=True
-        report['status']='PASS V015: four compact M3 mounting ears drive arm/cavity/saddle envelope with continuous rear tool corridors; Waveshare reference not registered'
+        report['status']='PASS V016: fastener-driven outer/inner side profiles, compact M3 ears and rear tool corridors; Waveshare fit unregistered'
         return report
 
 
@@ -1031,7 +1129,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V015 CURVED-SIDE DATUM',
+    ax.set_title(f'NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  {d.cfg["release"]} CURVED-SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -1066,10 +1164,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V015.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V016.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V015.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V016.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')

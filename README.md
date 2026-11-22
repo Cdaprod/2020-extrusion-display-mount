@@ -1,5 +1,18 @@
 # 2020 Extrusion Display Mount
 
+## V016 — one shared parametric profile solution
+
+**No new FreeCAD sketches are required.** The four M3 screw stations now drive the side-profile solver as well as the mounting-ear envelopes, paired arm spacing, and keyed saddle span. The exterior rear root remains anchored to the extrusion saddle, while its lower corner, bulge, and upper shoulder Y positions are calculated as dimensionless functions of vertical screw pitch. The rear-bulge elevation follows the vertical fastener midpoint and pitch; neither upper nor lower inner-curve entry is an independently fixed Y coordinate. Both entry points are inset from their corresponding outer support sections by a configurable required web.
+
+The existing G1-tangent Bézier opening is retained and now uses the same derived outer controls as the exterior spine. All four M3 counterbores, integral ears and longitudinal rear screwdriver corridors are preserved. **The measured Waveshare Ø2, 114 × 59.1 mm mounting pattern remains unregistered** to the provisional bracket's M3 78 × 45 mm pattern: manufacturing fit is not certified.
+
+![V016 actual parametric frame](previews/main_frame_only.png)
+
+![V016 generated engineering side profile](previews/engineering_side_profile.png)
+
+[V016 parametric geometry dependency contract](docs/V016_SHARED_PROFILE_SOLVER.md) · [V016 printable two-piece STEP](step/PRINTABLE_PARTS_V016.step) · [V016 full reference STEP](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V016.step)
+
+
 ## V015 — G1 nested curved arm openings and four compact screw mounts
 
 V015 corrects the core V014 side-profile problem. Each side now has one **front-open C/U cavity bounded by two tangent-connected cubic Bézier segments**. Its inner rearward nose is derived from the M3-constrained opening heights and the outer load-bearing side curve, separated by a configurable 9 mm nominal spine. The upper and lower inner edges meet the fastener envelope with horizontal tangents; the rear nose is vertically tangent (G1). No secondary slits, box-like pockets, or additional screw positions are introduced. There are still **two short individual M3 ear tabs per structural arm** (four screws total), each with preserved rear screwdriver access and 3.2 mm bearing floor.

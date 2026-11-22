@@ -45,9 +45,9 @@
   "rail_volume_mm3": 33082.04,
   "upper_saddle_volume_mm3": 70060.79,
   "keeper_volume_mm3": 26554.94,
-  "left_arm_volume_mm3": 49251.87,
-  "right_arm_volume_mm3": 49251.87,
-  "main_volume_mm3": 171515.57,
+  "left_arm_volume_mm3": 49259.31,
+  "right_arm_volume_mm3": 49259.31,
+  "main_volume_mm3": 171530.45,
   "main_vs_rail_overlap_mm3": 0.0,
   "keeper_vs_rail_overlap_mm3": 0.0,
   "main_vs_keeper_overlap_mm3": 0.0,
@@ -75,6 +75,46 @@
   "mount_hole_center_spacing_mm": 78,
   "support_arm_center_spacing_mm": 78,
   "effective_saddle_length_mm": 108,
+  "v016_constraint_solution": {
+    "screw_x_centers_mm": [
+      -39.0,
+      39.0
+    ],
+    "screw_z_centers_mm": [
+      53.0,
+      98.0
+    ],
+    "short_mount_tab_half_height_mm": 6.5,
+    "outer_profile_controls_mm": {
+      "lower_y": 47.0,
+      "bulge_y": 58.0,
+      "shoulder_y": 16.0,
+      "bulge_z": 85.5,
+      "top_z": 104.5,
+      "saddle_back_y": 20.2,
+      "lower_screw_z": 53.0,
+      "upper_screw_z": 98.0
+    },
+    "inner_profile_controls_mm": {
+      "bottom_z": 59.5,
+      "top_z": 91.5,
+      "middle_z": 75.5,
+      "nose_y": 47.42632331902718,
+      "exterior_nose_y": 56.42632331902718,
+      "rear_top_y": 35.886842105263156,
+      "rear_bottom_y": 45.058440629470674,
+      "web_at_nose_mm": 9.0,
+      "upper_tangent_mm": 4,
+      "lower_tangent_mm": 1.7048755364806867,
+      "vertical_tangent_mm": 7.68
+    },
+    "inner_rear_lip_offset_mm": 8.85,
+    "minimum_actual_planar_web_mm": 3.306,
+    "arm_center_pitch_mm": 78,
+    "saddle_length_mm": 108,
+    "hardware_datum_mode": "provisional",
+    "two_short_ears_per_arm": true
+  },
   "v015_curved_side_profile": {
     "method": "two G1-tangent cubic Bezier arcs per structural arm",
     "inner_section_mm": {
@@ -83,11 +123,11 @@
       "middle_z": 75.5,
       "nose_y": 47.42632331902718,
       "exterior_nose_y": 56.42632331902718,
-      "rear_top_y": 36,
-      "rear_bottom_y": 45,
+      "rear_top_y": 35.886842105263156,
+      "rear_bottom_y": 45.058440629470674,
       "web_at_nose_mm": 9.0,
       "upper_tangent_mm": 4,
-      "lower_tangent_mm": 1.746952789699572,
+      "lower_tangent_mm": 1.7048755364806867,
       "vertical_tangent_mm": 7.68
     },
     "min_sampled_rear_web_mm": 7.5,
@@ -162,11 +202,11 @@
   "v014_deeper_u_opening": {
     "lower_z_mm": 59.5,
     "upper_z_mm": 91.5,
-    "rear_lower_y_mm": 45,
-    "rear_upper_y_mm": 36,
+    "rear_lower_y_mm": 45.058440629470674,
+    "rear_upper_y_mm": 35.886842105263156,
     "corner_radius_mm": 6,
-    "top_rear_spine_web_mm": 8.7368,
-    "lower_rear_spine_web_mm": 8.9084
+    "top_rear_spine_web_mm": 8.85,
+    "lower_rear_spine_web_mm": 8.85
   },
   "v014_rear_driver_tunnels": {
     "count": 4,
@@ -178,8 +218,8 @@
   "v011_pitch_driven_support_profile": {
     "bottom_z": 59.5,
     "top_z": 91.5,
-    "rear_bottom_y": 45,
-    "rear_top_y": 36,
+    "rear_bottom_y": 45.058440629470674,
+    "rear_top_y": 35.886842105263156,
     "outer_bulge_z": 85.5,
     "screw_z": [
       53.0,
@@ -187,8 +227,8 @@
     ],
     "support_radius": 7.5,
     "roof_web_z": 6.5,
-    "top_slope_rear_web_y": 8.736842105263158,
-    "lower_slope_rear_web_y": 8.908440629470675
+    "top_slope_rear_web_y": 8.850000000000001,
+    "lower_slope_rear_web_y": 8.850000000000001
   },
   "v011_required_m3_support_radius_mm": 7.5,
   "v011_min_screw_web_mm": 4,
@@ -219,10 +259,10 @@
   "detached_carrier_count": 0,
   "integral_arm_m3_holes": 4,
   "rear_sheet_removed": true,
-  "status": "PASS V015: four compact M3 mounting ears drive arm/cavity/saddle envelope with continuous rear tool corridors; Waveshare reference not registered",
+  "status": "PASS V016: fastener-driven outer/inner side profiles, compact M3 ears and rear tool corridors; Waveshare fit unregistered",
   "rail_reference_sha256": "978f92d68d8ce3ca31434f931257e2c80632c417ef78b4b6f0189b26e5b4c9f0",
   "design_config": {
-    "release": "V015",
+    "release": "V016",
     "units": "mm",
     "rail_reference_length_mm": 120,
     "rail_nominal_size_mm": 20,
@@ -267,7 +307,7 @@
     "display_side_window_length_mm": 48,
     "rear_access_tool_diameter_mm": 4.2,
     "nominal_display_reference_thickness_mm": 5,
-    "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured. V009 corrects through-thickness port relief notches that crossed the M3 screw centerlines; retain a continuous central rail spine and integrated screw-bearing pads, with rear-open counterbores. V009 structural correction: no separate carrier. Both arms directly carry the M3 head seats, \u00d83.4 through-bores, and rear \u00d87 tool corridors; remaining front seat wall 3.2 mm. Provisional stations S=20/65 avoid front opening while measured PCB pattern remains unknown. V010: nominal \u00d812 front neck around \u00d87 rear driver access, X width tapered into the full structural arm; top excess trimmed to 9.5 mm above upper M3; analytic tangent arcs on the structural outer profile and a 1 mm keeper vertical-edge fillet. Critical bores, mating planes, source rail geometry and floor unchanged; print strength remains unqualified. V011: screw stations determine side opening top/bottom, rear opening contour, and exterior shoulder/bulge height. A full \u00d87 tool-path plus 4 mm web envelope drives key planes; roof and lower web are checked against tangentially filleted cuts; no independent fixed Z opening. V012: one filleted U-cutter instead of joined slot2D + rectangle; smoothstep-like lofted front neck root; source-STEP-extracted four-hole datum independently tracked because provisional 78x45 mounting pattern does not physically match 114x59.1 reference. V013: enlarge both arm U windows using screw station \u00b110 mm, radiused R6 corners, and deeper rear boundary at Y45/Y36 while preserving 8 mm nominal slope spine. All four \u00d87 longitudinal driver tunnels are explicitly extended beyond the actual arm rear envelope; M3 seats remain blind with \u22653.2 mm axial bearing floor and screw clearance passages into screen only. Source Waveshare 114\u00d759.1 mm remains a separate unregistered datum. V014: mounting hole X pitch is sole source of truth for structural-arm X centers and full saddle length (arm thickness + two 7mm side margins). Four independent compact M3 ears each extend only max(driver/head) radius + 2.5mm radial wall + .5mm tolerance above and below the screw station. U opens between ears, and the lower ear is undercut into the gusset with a screw-position-linked relief; cap top follows upper ear. Maintain rear \u00d87 exits and 3.2mm counterbore floor. Hardware STEP native pad pattern is not yet fitted to nominal M3 candidate. V015: The structural side opening is one front-open, two-piece G1 cubic Bezier inner contour, tangent at the nose and at the horizontal lips below/above the independent M3 ears. Its rear nose follows the screw-derived vertical profile and interpolated outer spine minus nominal 9 mm material. All four M3 stations remain on independent compact pads with rear tunnel exits. Reference rail and measured Waveshare footprint remain unchanged.",
+    "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured. V009 corrects through-thickness port relief notches that crossed the M3 screw centerlines; retain a continuous central rail spine and integrated screw-bearing pads, with rear-open counterbores. V009 structural correction: no separate carrier. Both arms directly carry the M3 head seats, \u00d83.4 through-bores, and rear \u00d87 tool corridors; remaining front seat wall 3.2 mm. Provisional stations S=20/65 avoid front opening while measured PCB pattern remains unknown. V010: nominal \u00d812 front neck around \u00d87 rear driver access, X width tapered into the full structural arm; top excess trimmed to 9.5 mm above upper M3; analytic tangent arcs on the structural outer profile and a 1 mm keeper vertical-edge fillet. Critical bores, mating planes, source rail geometry and floor unchanged; print strength remains unqualified. V011: screw stations determine side opening top/bottom, rear opening contour, and exterior shoulder/bulge height. A full \u00d87 tool-path plus 4 mm web envelope drives key planes; roof and lower web are checked against tangentially filleted cuts; no independent fixed Z opening. V012: one filleted U-cutter instead of joined slot2D + rectangle; smoothstep-like lofted front neck root; source-STEP-extracted four-hole datum independently tracked because provisional 78x45 mounting pattern does not physically match 114x59.1 reference. V013: enlarge both arm U windows using screw station \u00b110 mm, radiused R6 corners, and deeper rear boundary at Y45/Y36 while preserving 8 mm nominal slope spine. All four \u00d87 longitudinal driver tunnels are explicitly extended beyond the actual arm rear envelope; M3 seats remain blind with \u22653.2 mm axial bearing floor and screw clearance passages into screen only. Source Waveshare 114\u00d759.1 mm remains a separate unregistered datum. V014: mounting hole X pitch is sole source of truth for structural-arm X centers and full saddle length (arm thickness + two 7mm side margins). Four independent compact M3 ears each extend only max(driver/head) radius + 2.5mm radial wall + .5mm tolerance above and below the screw station. U opens between ears, and the lower ear is undercut into the gusset with a screw-position-linked relief; cap top follows upper ear. Maintain rear \u00d87 exits and 3.2mm counterbore floor. Hardware STEP native pad pattern is not yet fitted to nominal M3 candidate. V015: The structural side opening is one front-open, two-piece G1 cubic Bezier inner contour, tangent at the nose and at the horizontal lips below/above the independent M3 ears. Its rear nose follows the screw-derived vertical profile and interpolated outer spine minus nominal 9 mm material. All four M3 stations remain on independent compact pads with rear tunnel exits. Reference rail and measured Waveshare footprint remain unchanged. V016: one fastener-controlled side-section constraint solution for outer bulge Z/Y, gusset Y, shoulder Y, inner upper/lower rear controls and curved nose, using the saddle datum as origin and dimensionless pitch ratios. Ear envelopes, external spine, inner G1 B\u00e9zier window and saddle span all update from shared screw X/Z datums. Explicit Euclidean 2D nearest-profile thickness check complements historical Y-web samples. Reference Waveshare 114x59.1 and \u00d82 holes remain unregistered: no manufactured fit approval.",
     "require_perpendicular_display": true,
     "require_display_centering": true,
     "arm_outer_rear_shoulder_y_mm": 16,
@@ -378,6 +418,14 @@
     "v015_min_sampled_rear_web_mm": 7.5,
     "v015_min_curve_bulge_mm": 1.5,
     "v015_curve_horizontal_tangent_mm": 4,
-    "v015_curve_vertical_tangent_fraction": 0.24
+    "v015_curve_vertical_tangent_fraction": 0.24,
+    "v016_reference_vertical_pitch_mm": 45,
+    "v016_outer_lower_rear_y_from_saddle_pitch_ratio": 0.5955555555555556,
+    "v016_outer_bulge_y_from_saddle_pitch_ratio": 0.84,
+    "v016_outer_shoulder_y_from_saddle_pitch_ratio": -0.09333333333333332,
+    "v016_bulge_z_above_screw_mid_pitch_ratio": 0.2222222222222222,
+    "v016_inner_lip_y_web_mm": 8.85,
+    "v016_outer_inner_min_euclidean_web_mm": 2,
+    "v016_hardware_datum_mode": "provisional"
   }
 }
