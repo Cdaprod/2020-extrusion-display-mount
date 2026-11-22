@@ -90,6 +90,35 @@ class Design:
         return diameter/2+self.v014_min_tab_wall_mm+self.v014_tab_edge_allowance_mm
 
     @property
+    def shared_mounting_tab_profiles_mm(self):
+        """Identical tab envelopes located from each screw center.
+
+        A single local profile is translated to both vertical screw datums on
+        each arm.  Keeping these envelopes explicit prevents lower-tab height
+        or bearing material from being inferred from the gusset connection.
+        The lower gusset remains a separate structural transition behind them.
+        """
+        half_h=self.compact_tab_half_height_mm
+        half_w=self.arm_thickness_mm/2
+        front=self.arm_front_y_mm+self.arm_top_land_mm
+        rear=front+self.mount_pad_axial_thickness_mm
+        projection=self.display_standoff_height_mm
+        corner=self.board_mount_tab_corner_radius_mm
+        profiles=[]
+        for side,x in zip((-1,1),self.mounting_x_centers_mm):
+            for z in (self.path_point(s)[1] for s in self.mounting_stations_s_mm):
+                profiles.append({
+                    'side':side,'x_center_mm':x,'z_center_mm':z,
+                    'x_min_mm':x-half_w,'x_max_mm':x+half_w,
+                    'z_min_mm':z-half_h,'z_max_mm':z+half_h,
+                    'height_mm':2*half_h,'width_mm':2*half_w,
+                    'bearing_depth_mm':self.mount_pad_axial_thickness_mm,
+                    'front_projection_mm':projection,
+                    'corner_radius_mm':corner,
+                    'radial_bearing_wall_mm':self.v014_min_tab_wall_mm})
+        return tuple(profiles)
+
+    @property
     def front_neck_width_mm(self):
         """Minimum X width of the narrowed, arm-integrated front mounting face."""
         return self.arm_thickness_mm-2*self.arm_front_rail_side_trim_mm
@@ -146,9 +175,12 @@ class Design:
         # A screw envelope is preserved BEFORE any corner fillet.
         # The U opening ends at the exact envelope of each compact tab.
         # Mount station -> tab height -> cutout -> arm top -> full envelope.
+        # Cut boundaries are the exact upper/lower edges of the shared local
+        # tab profile translated to the two screw centers.
+        tabs=self.shared_mounting_tab_profiles_mm
         tab_half=self.compact_tab_half_height_mm
-        lower=zl+tab_half
-        upper=zh-tab_half
+        lower=tabs[0]['z_max_mm']
+        upper=tabs[1]['z_min_mm']
         min_half=max(self.board_driver_access_d_mm,
                      self.board_screw_head_access_d_mm)/2+self.v014_min_tab_wall_mm
         if tab_half<min_half or tab_half>self.v014_max_tab_half_height_mm:
@@ -196,6 +228,7 @@ class Design:
             fasteners_x=list(self.mounting_x_centers_mm),
             fasteners_z=list(self.adaptive_profile['screw_z']),
             mounting_ears=self.compact_tab_half_height_mm,
+            mounting_tab_profiles=list(self.shared_mounting_tab_profiles_mm),
             outer=self.v016_outer_controls,
             opening=self.adaptive_profile,
             curves=self.v015_inner_profile,
@@ -811,6 +844,7 @@ class Design:
             'hardware_datum_mode':self.v016_hardware_datum_mode,
             'two_short_ears_per_arm':True
         }
+        report['shared_mounting_tab_profiles_mm']=list(self.shared_mounting_tab_profiles_mm)
         report['v015_curved_side_profile']={
             'method':'two G1-tangent cubic Bezier arcs per structural arm',
             'inner_section_mm':self.v015_inner_profile,

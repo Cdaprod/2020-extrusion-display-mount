@@ -107,6 +107,7 @@
   "support_arm_center_spacing_mm": 78,
   "board_screw_station_center_mm": 42.5,
   "board_screw_vertical_pitch_mm": 45,
+  "board_mount_tab_corner_radius_mm": 0,
   "min_screw_head_floor_mm": 3,
   "min_screw_head_radial_wall_mm": 2.5,
   "board_screw_nominal_diameter_mm": 3,

@@ -6,6 +6,8 @@
 
 The existing G1-tangent Bézier opening is retained and now uses the same derived outer controls as the exterior spine. All four M3 counterbores, integral ears and longitudinal rear screwdriver corridors are preserved. **The measured Waveshare Ø2, 114 × 59.1 mm mounting pattern remains unregistered** to the provisional bracket's M3 78 × 45 mm pattern: manufacturing fit is not certified.
 
+The generator now exposes one shared local mounting-tab envelope and translates it to each screw center on both arms. Upper/lower tab height, width, bearing depth, front projection and edge treatment are checked as equal; the lower-root relief and rear gusset are separate structural geometry. Changing vertical pitch moves the tabs and profile stations without stretching the tabs. Infeasible pitches are rejected when the opening, rear web or curves cannot preserve clearance. The FreeCAD sketch workspace is a separate manually edited document; its native topological references are not the generator's source of truth.
+
 ![V016 actual parametric frame](previews/main_frame_only.png)
 
 ![V016 generated engineering side profile](previews/engineering_side_profile.png)

@@ -12,6 +12,9 @@ The two opening Z boundaries derive directly from the screw positions and ear en
 ## Verification
 The fast nominal shape is deliberately preserved within rounding of the previous style ratios while moving to fully coupled controls. Tests require outer shoulder, bulge and lower root to react when screw pitch changes, and inner opening plus four M3 ear locations to remain constrained. Disallow negative webs, folded curves and impossible pitch. Existing CAD validity, clamp clearance, non-interference, rear-driver entry and connected-solid checks remain.
 
+## Shared mounting-tab profile
+One local ear envelope is derived from the larger of the rear driver and head-seat diameters, plus the configured radial wall and edge allowance. It is translated to each screw center on both arms. Width, height, bearing depth, front projection, corner treatment and radial bearing wall are emitted in `shared_mounting_tab_profiles_mm` and checked for equality by the model tests. The lower-root relief and rear gusset are separate structural geometry; neither changes the lower tab envelope. The front service opening begins at the lower tab's upper edge and ends at the upper tab's lower edge.
+
 **Physical hardware boundary:** The Waveshare STEP reference identifies 114×59.1 mm hole pitch and Ø2 native holes; the candidate bracket is 78×45 mm M3 and remains explicitly unregistered. Do not declare a real hardware fit. The 120 mm source rail is never scaled or moved to reconcile mismatches.
 
 Current generator: `src/build.py`; parameters: `config/mount_spec.json`; generated validation: `docs/validation.json`. Publish STEP/STL/PNG together after the GitHub CAD runner passes.

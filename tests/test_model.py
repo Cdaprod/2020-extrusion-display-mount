@@ -235,6 +235,34 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(changed['fasteners_x'],[-45,45])
         self.assertEqual(changed['saddle_length'],120)
 
+    def test_upper_and_lower_tabs_share_one_screw_centered_profile(self):
+        tabs=self.d.shared_mounting_tab_profiles_mm
+        self.assertEqual(len(tabs),4)
+        for lower,upper in ((tabs[0],tabs[1]),(tabs[2],tabs[3])):
+            for key in ('height_mm','width_mm','bearing_depth_mm',
+                        'front_projection_mm','corner_radius_mm',
+                        'radial_bearing_wall_mm'):
+                self.assertEqual(lower[key],upper[key])
+            self.assertAlmostEqual(lower['z_center_mm'],
+                                   self.d.adaptive_profile['screw_z'][0])
+            self.assertAlmostEqual(upper['z_center_mm'],
+                                   self.d.adaptive_profile['screw_z'][1])
+            self.assertAlmostEqual(lower['z_min_mm']-lower['z_center_mm'],
+                                   -(lower['height_mm']/2))
+            self.assertAlmostEqual(upper['z_max_mm']-upper['z_center_mm'],
+                                   upper['height_mm']/2)
+        changed=dict(self.cfg)
+        changed['board_screw_vertical_pitch_mm']+=2
+        moved=Design(changed).shared_mounting_tab_profiles_mm
+        self.assertEqual([t['height_mm'] for t in moved],
+                         [t['height_mm'] for t in tabs])
+        self.assertEqual([t['width_mm'] for t in moved],
+                         [t['width_mm'] for t in tabs])
+        self.assertAlmostEqual(moved[0]['z_center_mm'],tabs[0]['z_center_mm']-1)
+        self.assertAlmostEqual(moved[1]['z_center_mm'],tabs[1]['z_center_mm']+1)
+        self.assertNotEqual(moved[0]['z_min_mm'],tabs[0]['z_min_mm'])
+        self.assertNotEqual(moved[1]['z_max_mm'],tabs[1]['z_max_mm'])
+
     def test_v016_rejects_unphysical_profile_offset(self):
         for field,value in [('v016_inner_lip_y_web_mm',6),
                             ('v016_outer_bulge_y_from_saddle_pitch_ratio',.3),

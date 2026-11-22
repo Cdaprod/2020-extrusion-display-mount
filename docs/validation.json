@@ -115,6 +115,68 @@
     "hardware_datum_mode": "provisional",
     "two_short_ears_per_arm": true
   },
+  "shared_mounting_tab_profiles_mm": [
+    {
+      "side": -1,
+      "x_center_mm": -39.0,
+      "z_center_mm": 53.0,
+      "x_min_mm": -47.0,
+      "x_max_mm": -31.0,
+      "z_min_mm": 46.5,
+      "z_max_mm": 59.5,
+      "height_mm": 13.0,
+      "width_mm": 16.0,
+      "bearing_depth_mm": 6.2,
+      "front_projection_mm": 1.5,
+      "corner_radius_mm": 0,
+      "radial_bearing_wall_mm": 2.5
+    },
+    {
+      "side": -1,
+      "x_center_mm": -39.0,
+      "z_center_mm": 98.0,
+      "x_min_mm": -47.0,
+      "x_max_mm": -31.0,
+      "z_min_mm": 91.5,
+      "z_max_mm": 104.5,
+      "height_mm": 13.0,
+      "width_mm": 16.0,
+      "bearing_depth_mm": 6.2,
+      "front_projection_mm": 1.5,
+      "corner_radius_mm": 0,
+      "radial_bearing_wall_mm": 2.5
+    },
+    {
+      "side": 1,
+      "x_center_mm": 39.0,
+      "z_center_mm": 53.0,
+      "x_min_mm": 31.0,
+      "x_max_mm": 47.0,
+      "z_min_mm": 46.5,
+      "z_max_mm": 59.5,
+      "height_mm": 13.0,
+      "width_mm": 16.0,
+      "bearing_depth_mm": 6.2,
+      "front_projection_mm": 1.5,
+      "corner_radius_mm": 0,
+      "radial_bearing_wall_mm": 2.5
+    },
+    {
+      "side": 1,
+      "x_center_mm": 39.0,
+      "z_center_mm": 98.0,
+      "x_min_mm": 31.0,
+      "x_max_mm": 47.0,
+      "z_min_mm": 91.5,
+      "z_max_mm": 104.5,
+      "height_mm": 13.0,
+      "width_mm": 16.0,
+      "bearing_depth_mm": 6.2,
+      "front_projection_mm": 1.5,
+      "corner_radius_mm": 0,
+      "radial_bearing_wall_mm": 2.5
+    }
+  ],
   "v015_curved_side_profile": {
     "method": "two G1-tangent cubic Bezier arcs per structural arm",
     "inner_section_mm": {
@@ -370,6 +432,7 @@
     "support_arm_center_spacing_mm": 78,
     "board_screw_station_center_mm": 42.5,
     "board_screw_vertical_pitch_mm": 45,
+    "board_mount_tab_corner_radius_mm": 0,
     "min_screw_head_floor_mm": 3,
     "min_screw_head_radial_wall_mm": 2.5,
     "board_screw_nominal_diameter_mm": 3,
