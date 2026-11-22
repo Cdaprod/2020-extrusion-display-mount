@@ -140,7 +140,7 @@ class Design:
             raise ValueError('Outer shoulder does not span service aperture roof')
         exterior_y=outer_y_bulge+(outer_y_top-outer_y_bulge)*fraction
         if exterior_y-rear_upper < max(self.opening_rear_web_mm,
-                                         self.v013_min_sloped_spine_web_mm):
+                                         self.v014_min_sloped_spine_web_mm):
             raise ValueError('Rear service aperture cuts into load-bearing sloped web')
         # At the lower obround end, the rear spine approaches the long outer
         # bulge. Constrain it against the actual outside YZ stations at that Z.
@@ -150,7 +150,7 @@ class Design:
             raise ValueError('Rear opening bottom outside support spine span')
         exterior_lower=(self.arm_outer_lower_rear_y_mm+
                         (self.arm_outer_rear_bulge_y_mm-self.arm_outer_lower_rear_y_mm)*bottom_fraction)
-        if exterior_lower-rear_lower < self.v013_min_sloped_spine_web_mm:
+        if exterior_lower-rear_lower < self.v014_min_sloped_spine_web_mm:
             raise ValueError('Rear opening bottom cuts into load-bearing diagonal web')
         return dict(bottom_z=lower,top_z=upper,rear_bottom_y=rear_lower,
                     rear_top_y=rear_upper,outer_bulge_z=outer_bulge_z,
@@ -177,7 +177,7 @@ class Design:
             raise ValueError('Lower-ear root relief must be positive')
         if radial<self.min_screw_head_radial_wall_mm:
             raise ValueError('M3 driver passage exits the structural arm')
-        if self.v013_rear_tool_overrun_mm<=0:
+        if self.v014_rear_tool_overrun_mm<=0:
             raise ValueError('Rear tool overrun must extend beyond outer spine')
         if self.board_driver_access_d_mm<self.board_screw_head_access_d_mm:
             raise ValueError('Rear passage cannot admit M3 screw head')
@@ -512,7 +512,7 @@ class Design:
             rear_outer=arm.BoundingBox().ymax
             start_y=face_y+self.mount_pad_axial_thickness_mm
             length=max(self.board_driver_access_length_mm,
-                       rear_outer-start_y+self.v013_rear_tool_overrun_mm)
+                       rear_outer-start_y+self.v014_rear_tool_overrun_mm)
             driver=cyl(self.board_driver_access_d_mm/2,length,
                        (mx,start_y,z),(0,1,0))
             arm=arm.cut(bore).cut(seat).cut(driver)
@@ -703,7 +703,7 @@ class Design:
             'approved_to_print_for_hardware_fit':False}
         if self.hardware_reference_fit_required:
             raise ValueError('Waveshare STEP native hole datum is not registered to 2020 saddle; physical-fit mode cannot pass')
-        report['v013_deeper_u_opening']={
+        report['v014_deeper_u_opening']={
             'lower_z_mm':profile['bottom_z'],
             'upper_z_mm':profile['top_z'],
             'rear_lower_y_mm':profile['rear_bottom_y'],
@@ -711,10 +711,10 @@ class Design:
             'corner_radius_mm':self.arm_opening_corner_radius_mm,
             'top_rear_spine_web_mm':round(profile['top_slope_rear_web_y'],4),
             'lower_rear_spine_web_mm':round(profile['lower_slope_rear_web_y'],4)}
-        report['v013_rear_driver_tunnels']={
+        report['v014_rear_driver_tunnels']={
             'count':4,
             'diameter_mm':self.board_driver_access_d_mm,
-            'minimum_exit_overrun_mm':self.v013_rear_tool_overrun_mm,
+            'minimum_exit_overrun_mm':self.v014_rear_tool_overrun_mm,
             'type':'enclosed round axial passages where surrounding solid exists',
             'bearing_floor_mm':round(self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm,4)}
         report['v011_pitch_driven_support_profile']=profile
