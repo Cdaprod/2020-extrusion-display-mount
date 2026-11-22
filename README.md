@@ -1,5 +1,20 @@
 # 2020 Extrusion Display Mount
 
+## V015 — G1 nested curved arm openings and four compact screw mounts
+
+V015 corrects the core V014 side-profile problem. Each side now has one **front-open C/U cavity bounded by two tangent-connected cubic Bézier segments**. Its inner rearward nose is derived from the M3-constrained opening heights and the outer load-bearing side curve, separated by a configurable 9 mm nominal spine. The upper and lower inner edges meet the fastener envelope with horizontal tangents; the rear nose is vertically tangent (G1). No secondary slits, box-like pockets, or additional screw positions are introduced. There are still **two short individual M3 ear tabs per structural arm** (four screws total), each with preserved rear screwdriver access and 3.2 mm bearing floor.
+
+The arm horizontal spacing and keyed 2020 saddle length still follow the mounting-hole X pitch. The vertical screw stations continue to position both mounting tabs, opening and arm cap. The outer spine's tangent fillets, lower gusset, unmodified 2020 rail STEP, keeper and nominal screw fit checks are retained.
+
+![V015 CAD-derived main frame](previews/main_frame_only.png)
+
+![V015 side section](previews/engineering_side_profile.png)
+
+![V015 rear screw passages](previews/rear_tool_tunnels_oblique.png)
+
+**Fit remains provisional:** The Waveshare reference STEP has Ø2 holes with 114 × 59.1 mm measured pitch. V015 retains the nominal 78 × 45 mm M3 pattern and cannot be treated as a verified hardware fit.
+
+
 ## V014 — compact independently constrained M3 mounting ears
 
 Each structural arm has two **short independent screw-mounting ears**, rather than a continuous carrier between the screw heads. The open-front cavity extends up to the derived screw-head/driver web, and the lower ear has a sculpted root relief into the gusset so it is no longer a long solid vertical tab. Each ear's height is **2 × (max(Ø7 tool corridor, Ø6.4 screw pocket) / 2 + 2.5 mm material + 0.5 mm margin) = 13 mm nominal**. The M3 center X positions drive both side-arm centerlines and the saddle length, so changing hole pitch changes the whole bracket width, not merely detached bores. Vertical screw center/pitch drives both tab positions, top of side profile, and the service window. Four rear tool tunnels continue through the actual arm back; the Ø3.4 screw bores and 3.2 mm bearing floors remain intact. The 2020 rail's original STEP is never stretched.

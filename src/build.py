@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V014.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V015.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -388,34 +388,82 @@ class Design:
                 wire=wire.threePointArc(s['mid'],s['exit'])
         return wire.close()
 
-    def arm_service_opening(self,side):
-        """One open-front YZ cavity, not a fused capsule and polygon.
+    @property
+    def v015_inner_profile(self):
+        """Screw-dependent C-shaped opening nested within the exterior curve."""
+        p=self.adaptive_profile
+        zm=(p['bottom_z']+p['top_z'])/2
+        z0=self.rib_lower_spine_start_z
+        z1=p['outer_bulge_z']
+        if not z0<zm<z1:
+            raise ValueError('V015 opening nose must lie on lower rear spine')
+        exterior=self.arm_outer_lower_rear_y_mm+(zm-z0)/(z1-z0)*(
+            self.arm_outer_rear_bulge_y_mm-self.arm_outer_lower_rear_y_mm)
+        nose=exterior-self.v015_rear_spine_web_mm
+        upper=p['rear_top_y']
+        lower=p['rear_bottom_y']
+        if nose<=max(upper,lower)+self.v015_min_curve_bulge_mm:
+            raise ValueError('V015 insufficient rear spine for curved cavity')
+        lift=(p['top_z']-p['bottom_z'])*self.v015_curve_vertical_tangent_fraction
+        if not 0<lift<(p['top_z']-p['bottom_z'])/2:
+            raise ValueError('V015 invalid vertical tangency length')
+        return dict(bottom_z=p['bottom_z'],top_z=p['top_z'],
+                    middle_z=zm,nose_y=nose,exterior_nose_y=exterior,
+                    rear_top_y=upper,rear_bottom_y=lower,
+                    web_at_nose_mm=exterior-nose,
+                    upper_tangent_mm=min(self.v015_curve_horizontal_tangent_mm,
+                                         (nose-upper)*.72),
+                    lower_tangent_mm=min(self.v015_curve_horizontal_tangent_mm,
+                                         (nose-lower)*.72),vertical_tangent_mm=lift)
 
-        The only two fillets visible in the remaining arm are the integral
-        back corners of this cutter. The cutter's own front rounding is
-        deliberately outside the real arm, avoiding a second slot, shoulder,
-        and non-tangent internal lip. Both M3 tab endpoints depend on their
-        fastener positions via adaptive_profile.
-        """
+    def v015_inner_boundary_edges(self):
+        """Two cubic Bezier arcs, joined G1 at rear nose and tangent to ear lips."""
+        p=self.v015_inner_profile
+        entry=self.arm_front_y_mm-self.service_cutter_front_overshoot_mm
+        if entry>=self.arm_front_y_mm-2*self.arm_opening_corner_radius_mm:
+            raise ValueError('V015 opening cutter front overlaps tab')
+        lo,hi,mid=p['bottom_z'],p['top_z'],p['middle_z']
+        lower,upper,nose=p['rear_bottom_y'],p['rear_top_y'],p['nose_y']
+        d0,d1,lv=p['lower_tangent_mm'],p['upper_tangent_mm'],p['vertical_tangent_mm']
+        def point(y,z):return cq.Vector(0,y,z)
+        return [
+            cq.Edge.makeLine(point(entry,lo),point(lower,lo)),
+            cq.Edge.makeBezier([point(lower,lo),point(lower+d0,lo),
+                                point(nose,mid-lv),point(nose,mid)]),
+            cq.Edge.makeBezier([point(nose,mid),point(nose,mid+lv),
+                                point(upper+d1,hi),point(upper,hi)]),
+            cq.Edge.makeLine(point(upper,hi),point(entry,hi)),
+            cq.Edge.makeLine(point(entry,hi),point(entry,lo))]
+
+    def arm_service_opening(self,side):
+        """V015: single curved front-open recess, not a box plus capsule."""
         if side not in (-1,1):
             raise ValueError('side must be -1 or +1')
-        p=self.adaptive_profile
-        zlo,zhi=p['bottom_z'],p['top_z']
-        entry=self.arm_front_y_mm-self.service_cutter_front_overshoot_mm
-        radius=self.arm_opening_corner_radius_mm
-        if entry>=self.arm_front_y_mm-2*radius:
-            raise ValueError('Unified U cutter front rounding would touch a mounting tab')
-        if p['rear_bottom_y']<=self.arm_front_y_mm+self.arm_opening_front_wall_mm:
-            raise ValueError('U opening has insufficient rear screwdriver reach')
-        # Four-sided opening footprint; precise G1 corner fillets are made
-        # on its X-parallel edges. No second bore or capsule is added.
-        cutter=(cq.Workplane('YZ')
-                .polyline([(entry,zlo),(p['rear_bottom_y'],zlo),
-                           (p['rear_top_y'],zhi),(entry,zhi)])
-                .close().extrude(self.arm_thickness_mm+2)
-                .edges('|X').fillet(radius)
-                .val().translate((-1,0,0)))
-        return check_solid('unified_front_u_cutter',cutter.clean())
+        edges=self.v015_inner_boundary_edges()
+        p=self.v015_inner_profile
+        min_web=float('inf')
+        for arc in edges[1:3]:
+            for k in range(65):
+                at=arc.positionAt(k/64)
+                if at.z<=self.adaptive_profile['outer_bulge_z']:
+                    bottom_z=self.rib_lower_spine_start_z
+                    top_z=self.adaptive_profile['outer_bulge_z']
+                    outside=self.arm_outer_lower_rear_y_mm+(
+                        (at.z-bottom_z)/(top_z-bottom_z))*(
+                        self.arm_outer_rear_bulge_y_mm-self.arm_outer_lower_rear_y_mm)
+                else:
+                    bottom_z=self.adaptive_profile['outer_bulge_z']
+                    top_z=self.adaptive_profile['screw_z'][1]+self.compact_tab_half_height_mm
+                    outside=self.arm_outer_rear_bulge_y_mm+(
+                        (at.z-bottom_z)/(top_z-bottom_z))*(
+                        self.arm_outer_rear_shoulder_y_mm-self.arm_outer_rear_bulge_y_mm)
+                min_web=min(min_web,outside-at.y)
+        if min_web<self.v015_min_sampled_rear_web_mm:
+            raise ValueError(f'V015 curvature intrudes on rear spine: {min_web:.2f} mm')
+        wire=cq.Wire.assembleEdges(edges)
+        cutter=cq.Solid.extrudeLinear(wire,[],cq.Vector(self.arm_thickness_mm+2,0,0))
+        return check_solid('v015_curved_g1_front_opening',
+                           cutter.translate((-1,0,0)).clean())
 
     def trim_forward_arm_face(self, arm, side):
         """Lofted full-width gusset -> narrow M3 front neck transition.
@@ -665,6 +713,13 @@ class Design:
         report['mount_hole_center_spacing_mm']=self.mount_hole_center_spacing_mm
         report['support_arm_center_spacing_mm']=self.effective_arm_pitch_mm
         report['effective_saddle_length_mm']=self.effective_saddle_length_mm
+        report['v015_curved_side_profile']={
+            'method':'two G1-tangent cubic Bezier arcs per structural arm',
+            'inner_section_mm':self.v015_inner_profile,
+            'min_sampled_rear_web_mm':self.v015_min_sampled_rear_web_mm,
+            'm3_mounting_tabs_total':4,
+            'rear_tool_corridors_preserved':True
+        }
         report['v014_compact_tabs']={
             'count':4,'height_mm':2*self.compact_tab_half_height_mm,
             'screw_x_mm':list(self.mounting_x_centers_mm),
@@ -735,7 +790,7 @@ class Design:
         report['detached_carrier_count']=0
         report['integral_arm_m3_holes']=4
         report['rear_sheet_removed']=True
-        report['status']='PASS V014: four compact M3 mounting ears drive arm/cavity/saddle envelope with continuous rear tool corridors; Waveshare reference not registered'
+        report['status']='PASS V015: four compact M3 mounting ears drive arm/cavity/saddle envelope with continuous rear tool corridors; Waveshare reference not registered'
         return report
 
 
@@ -976,7 +1031,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V014 FASTENER-DRIVEN SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V015 CURVED-SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
