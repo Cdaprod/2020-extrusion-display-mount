@@ -173,7 +173,7 @@ class ModelTests(unittest.TestCase):
         self.assertFalse((ROOT/'step/carrier.step').exists())
         self.assertFalse((ROOT/'stl/carrier.stl').exists())
         for name in ('main_frame_only','rear_screw_access',
-                     'integrated_display_mount','engineering_side_profile','waveshare_mount_datums'):
+                     'integrated_display_mount','engineering_side_profile','waveshare_mount_datums','rear_tool_tunnels_oblique'):
             self.assertTrue((ROOT/'previews'/f'{name}.png').exists())
             self.assertIn(f'previews/{name}.png',(ROOT/'README.md').read_text())
 if __name__=='__main__': unittest.main()

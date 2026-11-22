@@ -764,6 +764,7 @@ def render_views(parts, output):
       'saddle_clamp': [('rail',.35),('upper_saddle',1.0),('keeper',1.0)],
       'integrated_display_mount': [('main',1.0),('m25',1.0)],
       'rear_screw_access': [('rail',.35),('main',1.0),('keeper',1.0),('m4',1.0),('m25',1.0)],
+      'rear_tool_tunnels_oblique': [('main',1.0),('m25',.32)],
     }
     saved=[]
     for name,entities in scenes.items():
@@ -779,6 +780,8 @@ def render_views(parts, output):
         camera=renderer.GetActiveCamera();camera.ParallelProjectionOn()
         if name=='rear_screw_access':
             camera.SetPosition(0,205,-102);camera.SetFocalPoint(0,8,50)
+        elif name=='rear_tool_tunnels_oblique':
+            camera.SetPosition(185,240,155);camera.SetFocalPoint(0,34,75)
         elif name=='side_section':
             camera.SetPosition(450,-260,160);camera.SetFocalPoint(0,9,48)
             # view mostly along +X side, slightly perspective for paired arms
