@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V013.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V014.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -72,6 +72,24 @@ class Design:
                 self.board_screw_station_center_mm+h)
 
     @property
+    def effective_arm_pitch_mm(self):
+        """The real M3 X pitch is the source of truth for BOTH structural arm axes."""
+        return self.mount_hole_center_spacing_mm
+
+    @property
+    def effective_saddle_length_mm(self):
+        """Resize keyed 2020 saddle when mounting pitch grows; retain minimum length."""
+        return max(self.upper_clamp_length_mm,
+                   self.effective_arm_pitch_mm+self.arm_thickness_mm+
+                   2*self.v014_saddle_side_margin_mm)
+
+    @property
+    def compact_tab_half_height_mm(self):
+        """Small independently retained M3 ears; no continuous carrier between them."""
+        diameter=max(self.board_screw_head_access_d_mm,self.board_driver_access_d_mm)
+        return diameter/2+self.v014_min_tab_wall_mm+self.v014_tab_edge_allowance_mm
+
+    @property
     def front_neck_width_mm(self):
         """Minimum X width of the narrowed, arm-integrated front mounting face."""
         return self.arm_thickness_mm-2*self.arm_front_rail_side_trim_mm
@@ -94,11 +112,17 @@ class Design:
         zl=self.path_point(lo)[1]; zh=self.path_point(hi)[1]
         r=self.screw_support_radius_mm
         # A screw envelope is preserved BEFORE any corner fillet.
-        lower=zl+self.opening_lower_offset_from_screw_mm
-        upper=zh-self.opening_upper_offset_from_screw_mm
-        clearance=self.opening_transition_clearance_mm
-        if lower<zl+r+clearance or upper>zh-r-clearance:
-            raise ValueError('Opening intersects a required M3 support envelope')
+        # The U opening ends at the exact envelope of each compact tab.
+        # Mount station -> tab height -> cutout -> arm top -> full envelope.
+        tab_half=self.compact_tab_half_height_mm
+        lower=zl+tab_half
+        upper=zh-tab_half
+        min_half=max(self.board_driver_access_d_mm,
+                     self.board_screw_head_access_d_mm)/2+self.v014_min_tab_wall_mm
+        if tab_half<min_half or tab_half>self.v014_max_tab_half_height_mm:
+            raise ValueError('Compact tab violates M3 head/driver radial support')
+        if lower>=upper:
+            raise ValueError('M3 vertical pitch too short for two separated mounting ears')
         if upper-lower<2*self.arm_opening_corner_radius_mm+2:
             raise ValueError('M3 pitch too small for radiused front service aperture')
         rear_lower=max(self.arm_opening_rear_bottom_y_mm,
@@ -106,7 +130,7 @@ class Design:
         rear_upper=max(self.arm_front_y_mm+self.arm_opening_front_wall_mm+4,
                        min(self.arm_opening_rear_top_y_mm,rear_lower-2))
         outer_bulge_z=max(self.arm_outer_rear_bulge_z_mm,(lower+upper)/2+self.outer_rear_bulge_margin_mm)
-        top=zh+self.upper_boss_cap_extra_mm
+        top=zh+self.compact_tab_half_height_mm
         # Side-wall rear distance at the roof must preserve a minimum ligament,
         # not merely avoid coincident boundary coordinates.
         outer_y_top=self.arm_outer_rear_shoulder_y_mm
@@ -116,7 +140,7 @@ class Design:
             raise ValueError('Outer shoulder does not span service aperture roof')
         exterior_y=outer_y_bulge+(outer_y_top-outer_y_bulge)*fraction
         if exterior_y-rear_upper < max(self.opening_rear_web_mm,
-                                         self.v013_min_sloped_spine_web_mm):
+                                         self.v014_min_sloped_spine_web_mm):
             raise ValueError('Rear service aperture cuts into load-bearing sloped web')
         # At the lower obround end, the rear spine approaches the long outer
         # bulge. Constrain it against the actual outside YZ stations at that Z.
@@ -126,7 +150,7 @@ class Design:
             raise ValueError('Rear opening bottom outside support spine span')
         exterior_lower=(self.arm_outer_lower_rear_y_mm+
                         (self.arm_outer_rear_bulge_y_mm-self.arm_outer_lower_rear_y_mm)*bottom_fraction)
-        if exterior_lower-rear_lower < self.v013_min_sloped_spine_web_mm:
+        if exterior_lower-rear_lower < self.v014_min_sloped_spine_web_mm:
             raise ValueError('Rear opening bottom cuts into load-bearing diagonal web')
         return dict(bottom_z=lower,top_z=upper,rear_bottom_y=rear_lower,
                     rear_top_y=rear_upper,outer_bulge_z=outer_bulge_z,
@@ -137,19 +161,23 @@ class Design:
     def validate_mount_dimensions(self):
         """M3 centers are constrained inside the actual structural arms."""
         if abs(self.display_angle_deg-90)>1e-6: raise ValueError('Display face must be vertical')
-        if self.mount_hole_center_spacing_mm<=0 or self.support_arm_center_spacing_mm<=0:
+        if self.mount_hole_center_spacing_mm<=0 or self.effective_arm_pitch_mm<=0:
             raise ValueError('Invalid symmetric X spacing')
-        offset=abs(self.mount_hole_center_spacing_mm-self.support_arm_center_spacing_mm)/2
+        offset=0  # M3 screw centerlines are coincident with arm centerlines
         radial=(self.front_neck_width_mm-self.board_driver_access_d_mm)/2-offset
         if self.arm_front_rail_side_trim_mm<0 or self.front_neck_width_mm<=0:
             raise ValueError('V010 side trims remove the arm neck')
         if self.arm_front_rail_taper_depth_mm<=self.mount_pad_axial_thickness_mm:
             raise ValueError('V010 front draft must reach the rear structural web')
-        if self.upper_boss_cap_extra_mm < self.board_driver_access_d_mm/2+self.min_screw_head_radial_wall_mm+1:
-            raise ValueError('V010 upper curved tip too close to M3 access bore')
+        if self.compact_tab_half_height_mm < self.board_driver_access_d_mm/2+self.v014_min_tab_wall_mm:
+            raise ValueError('V014 upper ear too close to rear screwdriver corridor')
+        if self.v014_min_tab_wall_mm<=0 or self.v014_tab_edge_allowance_mm<0:
+            raise ValueError('M3 compact-ear bearing wall and edge allowance must be nonnegative')
+        if self.v014_lower_ear_root_relief_mm<=0:
+            raise ValueError('Lower-ear root relief must be positive')
         if radial<self.min_screw_head_radial_wall_mm:
             raise ValueError('M3 driver passage exits the structural arm')
-        if self.v013_rear_tool_overrun_mm<=0:
+        if self.v014_rear_tool_overrun_mm<=0:
             raise ValueError('Rear tool overrun must extend beyond outer spine')
         if self.board_driver_access_d_mm<self.board_screw_head_access_d_mm:
             raise ValueError('Rear passage cannot admit M3 screw head')
@@ -162,6 +190,10 @@ class Design:
         if self.board_screw_clearance_d_mm>=self.board_screw_head_diameter_mm:
             raise ValueError('M3 bore exceeds head diameter')
         lo,hi=self.mounting_stations_s_mm
+        if self.v014_lower_ear_root_relief_mm>=lo-self.arm_front_neck_start_above_datum_mm:
+            raise ValueError('Lower-ear root relief too deep')
+        if self.effective_saddle_length_mm<self.effective_arm_pitch_mm+self.arm_thickness_mm+2*self.v014_saddle_side_margin_mm-.001:
+            raise ValueError('Saddle cannot support arm centerline pitch')
         if not (0<lo<hi<self.display_height_along_slope_mm):
             raise ValueError('Mount holes outside vertical arm region')
         profile=self.adaptive_profile
@@ -176,7 +208,7 @@ class Design:
         zl,zh=profile['screw_z']
         for z in (zl,zh):
             for edge in (profile['bottom_z'],profile['top_z']):
-                if abs(z-edge)<self.screw_support_radius_mm+self.opening_transition_clearance_mm:
+                if abs(z-edge)<self.compact_tab_half_height_mm-.001:
                     raise ValueError('Service edge violates M3 material envelope')
         return radial
 
@@ -231,7 +263,7 @@ class Design:
                 self.arm_front_z_mm + s * self.tangent[1] + offset * self.normal[1])
 
     def upper_clamp(self):
-        length = self.upper_clamp_length_mm
+        length = self.effective_saddle_length_mm
         w = self.upper_clamp_width_mm
         top = block(-length/2, -w/2, self.bridge_bottom,
                     length, w, self.upper_clamp_bridge_thickness_mm)
@@ -257,7 +289,7 @@ class Design:
         return check_solid('upper_saddle', body.clean())
 
     def keeper(self):
-        length, width = self.upper_clamp_length_mm, self.upper_clamp_width_mm
+        length, width = self.effective_saddle_length_mm, self.upper_clamp_width_mm
         top = self.lower_keeper_top_z_mm
         t = self.lower_keeper_thickness_mm
         solid = block(-length/2, -width/2, top-t, length, width, t)
@@ -280,7 +312,7 @@ class Design:
         # Keep a rounded, compact cap above the upper fastener rather than
         # V010's tall rectangular front tower. Derived from the M3 station.
         profile=self.adaptive_profile
-        z_top=profile['screw_z'][1]+self.upper_boss_cap_extra_mm
+        z_top=profile['screw_z'][1]+self.compact_tab_half_height_mm
         back=self.upper_clamp_width_mm/2-self.arm_gusset_saddle_overlap_mm
         root_z=self.upper_clamp_sidewall_bottom_z_mm+self.arm_gusset_bottom_relief_mm
         if not (0<self.arm_gusset_saddle_overlap_mm<self.upper_clamp_width_mm/2):
@@ -397,12 +429,12 @@ class Design:
         if trim<=0:
             return arm
         half=self.arm_thickness_mm/2
-        center=side*self.support_arm_center_spacing_mm/2
+        center=side*self.effective_arm_pitch_mm/2
         ymin=self.arm_front_y_mm+self.arm_top_land_mm
         yend=ymin+self.arm_front_rail_taper_depth_mm
         z0=self.arm_front_z_mm+self.arm_front_neck_start_above_datum_mm
         h=self.front_neck_blend_height_mm
-        z1=self.path_point(self.mounting_stations_s_mm[1])[1]+self.upper_boss_cap_extra_mm+2
+        z1=self.path_point(self.mounting_stations_s_mm[1])[1]+self.compact_tab_half_height_mm+2
         zl=self.adaptive_profile['screw_z'][0]
         if not (h>1 and z0+h<zl-self.board_driver_access_d_mm/2-1):
             raise ValueError('Front root blend must terminate below lower M3 passage')
@@ -428,6 +460,27 @@ class Design:
             arm=arm.cut(relief)
         return check_solid('lofted_front_neck',arm.clean())
 
+    def lower_tab_root_relief(self):
+        """Sculpt away the face below the lower screw ear; rear diagonal stays continuous.
+
+        This is NOT a carrier rail. The lower M3 ear terminates after its
+        compact head-support envelope and a radiused inward notch connects
+        it to the load-bearing side spine. Both Z ends follow the M3 station.
+        """
+        screw_z=self.adaptive_profile['screw_z'][0]
+        ear_start=screw_z-self.compact_tab_half_height_mm
+        z_end=ear_start-self.v014_tab_undercut_end_gap_mm
+        z_start=z_end-self.v014_lower_ear_root_relief_mm
+        front=self.arm_front_y_mm+self.arm_top_land_mm
+        entry=self.arm_front_y_mm-self.service_cutter_front_overshoot_mm-3
+        cut=(cq.Workplane('YZ')
+             .polyline([(entry,z_start),(front,z_start),
+                        (front+self.v014_undercut_rear_depth_mm,z_end),
+                        (entry,z_end)]).close()
+             .extrude(self.arm_thickness_mm+2)
+             .val().translate((-1,0,0)))
+        return check_solid('lower_ear_root_sculpt',cut)
+
     def arm(self,side):
         """The sculpted arm itself carries M3 seats and rear driver passages.
 
@@ -435,10 +488,11 @@ class Design:
         arm thickness against a floor; only Ø3.4 passes through to the PCB.
         """
         if side not in (-1,1): raise ValueError('Invalid side')
-        center=side*self.support_arm_center_spacing_mm/2
+        center=side*self.effective_arm_pitch_mm/2
         mx=self.mounting_x_centers_mm[0 if side<0 else 1]
         arm=self.rib_workplane().extrude(self.arm_thickness_mm).val()
         arm=arm.cut(self.arm_service_opening(side)).clean()
+        arm=arm.cut(self.lower_tab_root_relief()).clean()
         arm=arm.translate((center-self.arm_thickness_mm/2,0,0))
         arm=self.trim_forward_arm_face(arm,side)
         face_y=self.arm_front_y_mm+self.arm_top_land_mm
@@ -458,7 +512,7 @@ class Design:
             rear_outer=arm.BoundingBox().ymax
             start_y=face_y+self.mount_pad_axial_thickness_mm
             length=max(self.board_driver_access_length_mm,
-                       rear_outer-start_y+self.v013_rear_tool_overrun_mm)
+                       rear_outer-start_y+self.v014_rear_tool_overrun_mm)
             driver=cyl(self.board_driver_access_d_mm/2,length,
                        (mx,start_y,z),(0,1,0))
             arm=arm.cut(bore).cut(seat).cut(driver)
@@ -468,7 +522,7 @@ class Design:
         """Nominal side-specific open-front SD/USB corridor, not a PCB scan."""
         if side not in (-1,1): raise ValueError('Invalid service side')
         relief=self.cfg['sd_relief' if side<0 else 'usb_relief']
-        x=side*self.support_arm_center_spacing_mm/2
+        x=side*self.effective_arm_pitch_mm/2
         width=relief['inner_cut_width_mm']
         length=relief['length_mm']
         return block(x-width/2,-3,relief['station_mm']-length/2,width,25,length)
@@ -479,9 +533,9 @@ class Design:
         clamp=self.upper_clamp()
         la,ra=self.arm(-1),self.arm(1)
         tie_y=self.arm_outer_lower_rear_y_mm-9
-        cross=block(-self.support_arm_center_spacing_mm/2-self.arm_thickness_mm/2,
+        cross=block(-self.effective_arm_pitch_mm/2-self.arm_thickness_mm/2,
                     tie_y,self.bridge_top,
-                    self.support_arm_center_spacing_mm+self.arm_thickness_mm,8,9)
+                    self.effective_arm_pitch_mm+self.arm_thickness_mm,8,9)
         return check_solid('integrated_main_frame',union(clamp,la,ra,cross))
 
     def screen_reference(self):
@@ -555,7 +609,7 @@ class Design:
         # Probe real material in the lower rear region that was empty in V006.
         stations=self.rib_profile_stations()
         root=stations[2]
-        sample=block(-self.support_arm_center_spacing_mm/2-self.arm_thickness_mm/2+1,
+        sample=block(-self.effective_arm_pitch_mm/2-self.arm_thickness_mm/2+1,
                      root[0]+8,self.bridge_bottom-1,2,2,2)
         vol=parts['left_arm'].intersect(sample).Volume()
         report['visible_rear_gusset_root_yz_mm']=[round(v,4) for v in root]
@@ -587,7 +641,7 @@ class Design:
         # Verify actual 3D service corridors remain free of bracket solids.
         for side,label in [(-1,'sd'),(1,'usb')]:
             branch=self.cfg['service_left' if side<0 else 'service_right']
-            center=side*self.support_arm_center_spacing_mm/2
+            center=side*self.effective_arm_pitch_mm/2
             profile=self.adaptive_profile
             width=branch['throat_width_mm']
             margin=self.service_throat_min_boundary_margin_mm
@@ -609,7 +663,15 @@ class Design:
             if overlap>.01:
                 raise ValueError(f'{label} port/cable provisional service volume obstructed: {overlap}')
         report['mount_hole_center_spacing_mm']=self.mount_hole_center_spacing_mm
-        report['support_arm_center_spacing_mm']=self.support_arm_center_spacing_mm
+        report['support_arm_center_spacing_mm']=self.effective_arm_pitch_mm
+        report['effective_saddle_length_mm']=self.effective_saddle_length_mm
+        report['v014_compact_tabs']={
+            'count':4,'height_mm':2*self.compact_tab_half_height_mm,
+            'screw_x_mm':list(self.mounting_x_centers_mm),
+            'screw_s_mm':list(self.mounting_stations_s_mm),
+            'lower_root_relief_mm':self.v014_lower_ear_root_relief_mm,
+            'upper_cap_z_mm':self.adaptive_profile['screw_z'][1]+self.compact_tab_half_height_mm,
+            'pitch_drives_saddle_length':True}
         report['integral_arm_mount_stations_s_mm']=list(self.mounting_stations_s_mm)
         report['m3_pocket_floor_wall_mm']=round(self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm,4)
         report['m3_pocket_radial_wall_mm']=round(self.validate_mount_dimensions(),4)
@@ -641,7 +703,7 @@ class Design:
             'approved_to_print_for_hardware_fit':False}
         if self.hardware_reference_fit_required:
             raise ValueError('Waveshare STEP native hole datum is not registered to 2020 saddle; physical-fit mode cannot pass')
-        report['v013_deeper_u_opening']={
+        report['v014_deeper_u_opening']={
             'lower_z_mm':profile['bottom_z'],
             'upper_z_mm':profile['top_z'],
             'rear_lower_y_mm':profile['rear_bottom_y'],
@@ -649,10 +711,10 @@ class Design:
             'corner_radius_mm':self.arm_opening_corner_radius_mm,
             'top_rear_spine_web_mm':round(profile['top_slope_rear_web_y'],4),
             'lower_rear_spine_web_mm':round(profile['lower_slope_rear_web_y'],4)}
-        report['v013_rear_driver_tunnels']={
+        report['v014_rear_driver_tunnels']={
             'count':4,
             'diameter_mm':self.board_driver_access_d_mm,
-            'minimum_exit_overrun_mm':self.v013_rear_tool_overrun_mm,
+            'minimum_exit_overrun_mm':self.v014_rear_tool_overrun_mm,
             'type':'enclosed round axial passages where surrounding solid exists',
             'bearing_floor_mm':round(self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm,4)}
         report['v011_pitch_driven_support_profile']=profile
@@ -673,7 +735,7 @@ class Design:
         report['detached_carrier_count']=0
         report['integral_arm_m3_holes']=4
         report['rear_sheet_removed']=True
-        report['status']='PASS V013: enlarged U arm apertures, retained minimum spine web, four rear-exit M3 tool tunnels; Waveshare pad datum unregistered'
+        report['status']='PASS V014: four compact M3 mounting ears drive arm/cavity/saddle envelope with continuous rear tool corridors; Waveshare reference not registered'
         return report
 
 
@@ -697,7 +759,7 @@ def waveshare_mount_datum_fixture(d):
 
 
 def render_waveshare_datum(d,output):
-    """Auditable plot of native STEP-hole datum vs unregistered V013 proposal."""
+    """Auditable plot of native STEP-hole datum vs unregistered V014 proposal."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -715,7 +777,7 @@ def render_waveshare_datum(d,output):
         ax.text(x+2,y+(3 if y>0 else -4),f'({x:g}, {y:g})',fontsize=8)
     ax.plot([],[],'o',color='#1d4ed8',label='Source STEP: four circled hole centers')
     ax.set_xlim(-112,112);ax.set_ylim(-47,47);ax.set_aspect('equal')
-    ax.set_title('Waveshare 0820-1 STEP / extracted four-hole datum — V013',weight='bold')
+    ax.set_title('Waveshare 0820-1 STEP / extracted four-hole datum — V014',weight='bold')
     ax.set_xlabel('Native STEP X / mm');ax.set_ylabel('Native STEP Y / mm')
     ax.text(-103,-43,'Measured: X pitch 114, Y pitch 59.1 mm. Bracket config still 78 × 45; NOT FIT-CERTIFIED.',
             fontsize=9,color='#991b1b')
@@ -914,7 +976,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V013 FASTENER-DRIVEN SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V014 FASTENER-DRIVEN SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -949,10 +1011,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V013.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V014.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V013.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V014.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')

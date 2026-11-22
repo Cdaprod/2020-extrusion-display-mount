@@ -1,3 +1,19 @@
+# 2020 Extrusion Display Mount
+
+## V014 — compact independently constrained M3 mounting ears
+
+Each structural arm has two **short independent screw-mounting ears**, rather than a continuous carrier between the screw heads. The open-front cavity extends up to the derived screw-head/driver web, and the lower ear has a sculpted root relief into the gusset so it is no longer a long solid vertical tab. Each ear's height is **2 × (max(Ø7 tool corridor, Ø6.4 screw pocket) / 2 + 2.5 mm material + 0.5 mm margin) = 13 mm nominal**. The M3 center X positions drive both side-arm centerlines and the saddle length, so changing hole pitch changes the whole bracket width, not merely detached bores. Vertical screw center/pitch drives both tab positions, top of side profile, and the service window. Four rear tool tunnels continue through the actual arm back; the Ø3.4 screw bores and 3.2 mm bearing floors remain intact. The 2020 rail's original STEP is never stretched.
+
+![V014 geometry-derived main frame](previews/main_frame_only.png)
+
+![V014 side engineering profile](previews/engineering_side_profile.png)
+
+![V014 oblique rear tool corridor access](previews/rear_tool_tunnels_oblique.png)
+
+[Full V014 design and parameter dependency specification](docs/V014_FASTENER_DRIVEN_COMPACT_TABS.md)
+
+**Hardware caveat:** The actual Waveshare STEP shows Ø2 holes at 114 × 59.1 mm; nominal candidate M3 screws at 78 × 45 mm are not certified for direct mounting. No forced match or inferred threaded hardware.
+
 # Neptune 2 · Parametric 2020 Extrusion Display Mount · V013
 
 ## V013 — expanded curved U arms and enclosed rear-driver access
