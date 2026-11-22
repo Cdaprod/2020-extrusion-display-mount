@@ -111,8 +111,8 @@ class ModelTests(unittest.TestCase):
         p=self.d.v015_inner_profile
         es=self.d.v015_inner_boundary_edges()
         self.assertEqual(len(es),5)
-        self.assertEqual(es[1].geomType(),'BSPLINE')
-        self.assertEqual(es[2].geomType(),'BSPLINE')
+        self.assertEqual(es[1].geomType(),'BEZIER')
+        self.assertEqual(es[2].geomType(),'BEZIER')
         self.assertLess((es[1].endPoint()-es[2].startPoint()).Length,0.00001)
         self.assertAlmostEqual(p['web_at_nose_mm'],9)
         self.assertGreater(p['nose_y'],p['rear_bottom_y'])
