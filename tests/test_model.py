@@ -17,7 +17,7 @@ class ModelTests(unittest.TestCase):
 
     def test_integrated_vertical_mount_pitches(self):
         d=self.d
-        self.assertEqual(self.cfg['release'],'V016')
+        self.assertEqual(self.cfg['release'],'V017')
         self.assertFalse(hasattr(d,'carrier'))
         self.assertFalse(hasattr(d,'carrier_rails'))
         self.assertEqual(d.mounting_x_centers_mm,(-39,39))
@@ -81,7 +81,7 @@ class ModelTests(unittest.TestCase):
     def test_screw_pitch_drives_both_opening_edges_and_rear_profile(self):
         d=self.d
         p=d.adaptive_profile
-        self.assertEqual(self.cfg['release'],'V016')
+        self.assertEqual(self.cfg['release'],'V017')
         self.assertGreaterEqual(p['bottom_z']-p['screw_z'][0],
                                 d.compact_tab_half_height_mm)
         self.assertGreaterEqual(p['screw_z'][1]-p['top_z'],
@@ -241,7 +241,9 @@ class ModelTests(unittest.TestCase):
         for lower,upper in ((tabs[0],tabs[1]),(tabs[2],tabs[3])):
             for key in ('height_mm','width_mm','bearing_depth_mm',
                         'front_projection_mm','corner_radius_mm',
-                        'radial_bearing_wall_mm'):
+                        'bearing_diameter_mm','screw_clearance_diameter_mm',
+                        'head_access_diameter_mm','counterbore_depth_mm',
+                        'driver_access_diameter_mm','radial_bearing_wall_mm'):
                 self.assertEqual(lower[key],upper[key])
             self.assertAlmostEqual(lower['z_center_mm'],
                                    self.d.adaptive_profile['screw_z'][0])
@@ -292,6 +294,29 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(moved[1]['z_center_mm'],
                                tabs[1]['z_center_mm']+1)
 
+    def test_v017_actual_solids_rebuild_at_changed_x_and_z_pitches(self):
+        """Exercise geometry, not only the pitch equations and report fields."""
+        altered=dict(self.cfg)
+        altered['mount_hole_center_spacing_mm']=82
+        altered['board_screw_vertical_pitch_mm']=47
+        changed=Design(altered)
+        for side in (-1,1):
+            tabs=changed.mounting_tab_profiles_for_arm(side)
+            self.assertEqual(len(tabs),2)
+            self.assertEqual(tabs[0]['height_mm'],self.d.mounting_tab_profiles_for_arm(side)[0]['height_mm'])
+            self.assertAlmostEqual(tabs[0]['x_center_mm'],side*41)
+            self.assertAlmostEqual(tabs[1]['x_center_mm'],side*41)
+            self.assertAlmostEqual(tabs[0]['z_center_mm'],changed.path_point(changed.mounting_stations_s_mm[0])[1])
+            self.assertAlmostEqual(tabs[1]['z_center_mm'],changed.path_point(changed.mounting_stations_s_mm[1])[1])
+            self.assertTrue(changed.arm(side).isValid())
+            self.assertEqual(len(changed.arm(side).Solids()),1)
+        rebuilt=changed.integrated_support()
+        self.assertTrue(rebuilt.isValid())
+        self.assertEqual(len(rebuilt.Solids()),1)
+        # Nominal geometry is still the accepted state after the temporary edit.
+        nominal=Design(self.cfg).integrated_support()
+        self.assertTrue(nominal.isValid())
+
     def test_v016_rejects_unphysical_profile_offset(self):
         for field,value in [('v016_inner_lip_y_web_mm',6),
                             ('v016_outer_bulge_y_from_saddle_pitch_ratio',.3),
@@ -300,10 +325,10 @@ class ModelTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 Design(altered).validate_mount_dimensions()
 
-    def test_v016_manufacturing_and_preview_outputs(self):
+    def test_v017_manufacturing_and_preview_outputs(self):
         for name in ('main.step','left_arm.step','right_arm.step',
-                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V016.step',
-                     'PRINTABLE_PARTS_V016.step','M3_DISPLAY_SCREWS_REFERENCE.step',
+                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V017.step',
+                     'PRINTABLE_PARTS_V017.step','M3_DISPLAY_SCREWS_REFERENCE.step',
                      'WAVESHARE_0820_DATUM_FIXTURE.step'):
             self.assertTrue((ROOT/'step'/name).exists(),name)
         self.assertTrue((ROOT/'stl/main.stl').exists())

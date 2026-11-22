@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V016.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V017.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -89,6 +89,33 @@ class Design:
         diameter=max(self.board_screw_head_access_d_mm,self.board_driver_access_d_mm)
         return diameter/2+self.v014_min_tab_wall_mm+self.v014_tab_edge_allowance_mm
 
+    def mounting_tab_profiles_for_arm(self, side):
+        """Return the shared, screw-centered tab records consumed by the BREP.
+
+        The profile records are the dimensional authority for both the open
+        YZ envelope and the front bearing pads.  Keeping this selection in one
+        place prevents the pad centers from drifting away from the screw
+        stations when either pitch changes.
+        """
+        if side not in (-1, 1):
+            raise ValueError('side must be -1 or +1')
+        profiles=tuple(p for p in self.shared_mounting_tab_profiles_mm
+                       if p['side']==side)
+        if len(profiles)!=2:
+            raise ValueError(f'Expected two independent tabs for arm {side}')
+        profiles=tuple(sorted(profiles,key=lambda p:p['z_center_mm']))
+        signature=('width_mm','height_mm','bearing_depth_mm',
+                   'front_projection_mm','corner_radius_mm',
+                   'bearing_diameter_mm','screw_clearance_diameter_mm',
+                   'head_access_diameter_mm','counterbore_depth_mm',
+                   'driver_access_diameter_mm','radial_bearing_wall_mm')
+        if any(any(abs(profiles[0][k]-p[k])>1e-9 for k in signature)
+               for p in profiles[1:]):
+            raise ValueError(f'Upper/lower tab definitions diverged for arm {side}')
+        if profiles[0]['z_max_mm']>=profiles[1]['z_min_mm']:
+            raise ValueError(f'Tabs overlap; no open region remains on arm {side}')
+        return profiles
+
     @property
     def shared_mounting_tab_profiles_mm(self):
         """Identical tab envelopes located from each screw center.
@@ -120,6 +147,11 @@ class Design:
             'bearing_depth_mm':self.mount_pad_axial_thickness_mm,
             'front_projection_mm':self.display_standoff_height_mm,
             'corner_radius_mm':self.board_mount_tab_corner_radius_mm,
+            'bearing_diameter_mm':self.display_standoff_diameter_mm,
+            'screw_clearance_diameter_mm':self.board_screw_clearance_d_mm,
+            'head_access_diameter_mm':self.board_screw_head_access_d_mm,
+            'counterbore_depth_mm':self.board_counterbore_depth_mm,
+            'driver_access_diameter_mm':self.board_driver_access_d_mm,
             'radial_bearing_wall_mm':self.v014_min_tab_wall_mm,
         }
 
@@ -677,23 +709,28 @@ class Design:
         """
         if side not in (-1,1): raise ValueError('Invalid side')
         center=side*self.effective_arm_pitch_mm/2
-        mx=self.mounting_x_centers_mm[0 if side<0 else 1]
+        tabs=self.mounting_tab_profiles_for_arm(side)
         arm=self.rib_workplane().extrude(self.arm_thickness_mm).val()
         arm=arm.cut(self.arm_service_opening(side)).clean()
         arm=arm.cut(self.lower_tab_root_relief()).clean()
         arm=arm.translate((center-self.arm_thickness_mm/2,0,0))
         arm=self.trim_forward_arm_face(arm,side)
         face_y=self.arm_front_y_mm+self.arm_top_land_mm
-        floor=self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm
-        for station in self.mounting_stations_s_mm:
-            z=self.path_point(station)[1]
-            boss=cyl(self.display_standoff_diameter_mm/2,self.display_standoff_height_mm,
+        for tab in tabs:
+            # Drive every bearing pad from the exact same shared tab record
+            # used to determine the inner opening's end points.
+            mx=tab['x_center_mm']
+            z=tab['z_center_mm']
+            if abs(tab['width_mm']-self.arm_thickness_mm)>1e-7:
+                raise ValueError('Tab width must match the structural arm section')
+            floor=tab['bearing_depth_mm']-tab['counterbore_depth_mm']
+            boss=cyl(tab['bearing_diameter_mm']/2,tab['front_projection_mm'],
                      (mx,face_y,z),(0,-1,0))
             arm=arm.fuse(boss)
-            bore=cyl(self.board_screw_clearance_d_mm/2,
-                     floor+self.display_standoff_height_mm+2,
-                     (mx,face_y-self.display_standoff_height_mm-1,z),(0,1,0))
-            seat=cyl(self.board_screw_head_access_d_mm/2,self.board_counterbore_depth_mm+.02,
+            bore=cyl(tab['screw_clearance_diameter_mm']/2,
+                     floor+tab['front_projection_mm']+2,
+                     (mx,face_y-tab['front_projection_mm']-1,z),(0,1,0))
+            seat=cyl(tab['head_access_diameter_mm']/2,tab['counterbore_depth_mm']+.02,
                      (mx,face_y+floor-.01,z),(0,1,0))
             # A true rear-entry tunnel is extended beyond the ACTUAL exterior,
             # not stopped at an arbitrary historical fixed tool length.
@@ -701,7 +738,7 @@ class Design:
             start_y=face_y+self.mount_pad_axial_thickness_mm
             length=max(self.board_driver_access_length_mm,
                        rear_outer-start_y+self.v014_rear_tool_overrun_mm)
-            driver=cyl(self.board_driver_access_d_mm/2,length,
+            driver=cyl(tab['driver_access_diameter_mm']/2,length,
                        (mx,start_y,z),(0,1,0))
             arm=arm.cut(bore).cut(seat).cut(driver)
         return check_solid(('left' if side<0 else 'right')+'_integral_arm',arm.clean())
@@ -944,7 +981,7 @@ class Design:
         report['detached_carrier_count']=0
         report['integral_arm_m3_holes']=4
         report['rear_sheet_removed']=True
-        report['status']='PASS V016: fastener-driven outer/inner side profiles, compact M3 ears and rear tool corridors; Waveshare fit unregistered'
+        report['status']='PASS V017: shared tab records drive screw-bearing BREP; fastener-driven profiles and rear tool corridors; Waveshare fit unregistered'
         return report
 
 
@@ -1220,10 +1257,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V016.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V017.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V016.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V017.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')

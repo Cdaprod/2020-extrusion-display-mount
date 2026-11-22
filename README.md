@@ -1,18 +1,18 @@
 # 2020 Extrusion Display Mount
 
-## V016 — one shared parametric profile solution
+## V017 — dimensional authority for shared mounting tabs
 
 **No new FreeCAD sketches are required.** The four M3 screw stations now drive the side-profile solver as well as the mounting-ear envelopes, paired arm spacing, and keyed saddle span. The exterior rear root remains anchored to the extrusion saddle, while its lower corner, bulge, and upper shoulder Y positions are calculated as dimensionless functions of vertical screw pitch. The rear-bulge elevation follows the vertical fastener midpoint and pitch; neither upper nor lower inner-curve entry is an independently fixed Y coordinate. Both entry points are inset from their corresponding outer support sections by a configurable required web.
 
 The existing G1-tangent Bézier opening is retained and now uses the same derived outer controls as the exterior spine. All four M3 counterbores, integral ears and longitudinal rear screwdriver corridors are preserved. **The measured Waveshare Ø2, 114 × 59.1 mm mounting pattern remains unregistered** to the provisional bracket's M3 78 × 45 mm pattern: manufacturing fit is not certified.
 
-The generator now exposes one shared local mounting-tab envelope and translates it to each screw center on both arms. Upper/lower tab height, width, bearing depth, front projection and edge treatment are checked as equal; the lower-root relief and rear gusset are separate structural geometry. Changing vertical pitch moves the tabs and profile stations without stretching the tabs. Infeasible pitches are rejected when the opening, rear web or curves cannot preserve clearance. The FreeCAD sketch workspace is a separate manually edited document; its native topological references are not the generator's source of truth.
+The generator exposes one shared local tab definition and translates it to each screw center on both arms. The actual front bearing pads now consume those same records as the YZ opening lips, so changing horizontal or vertical screw pitch relocates the screw features and tabs together without stretching either tab. The lower-root relief and rear gusset remain separate structural geometry. The build validates connected solids after pitch changes and restores the nominal configuration before exporting. The FreeCAD review document remains a separate native dependency graph and is not represented as validated by this generator.
 
-![V016 actual parametric frame](previews/main_frame_only.png)
+![V017 generated parametric frame](previews/main_frame_only.png)
 
-![V016 generated engineering side profile](previews/engineering_side_profile.png)
+![V017 generated engineering side profile](previews/engineering_side_profile.png)
 
-[V016 parametric geometry dependency contract](docs/V016_SHARED_PROFILE_SOLVER.md) · [V016 printable two-piece STEP](step/PRINTABLE_PARTS_V016.step) · [V016 full reference STEP](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V016.step)
+[V016 side-profile construction history](docs/V016_SHARED_PROFILE_SOLVER.md) · [V017 printable two-piece STEP](step/PRINTABLE_PARTS_V017.step) · [V017 full reference STEP](step/COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V017.step)
 
 
 ## V015 — G1 nested curved arm openings and four compact screw mounts
