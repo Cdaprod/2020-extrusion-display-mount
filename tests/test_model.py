@@ -1,4 +1,4 @@
-"""V014: M3 mounting holes are integral to the actual sculpted arms."""
+"""V015: M3 mounting holes are integral to the actual sculpted arms."""
 import json,sys,unittest
 from pathlib import Path
 import cadquery as cq
@@ -17,7 +17,7 @@ class ModelTests(unittest.TestCase):
 
     def test_integrated_vertical_mount_pitches(self):
         d=self.d
-        self.assertEqual(self.cfg['release'],'V014')
+        self.assertEqual(self.cfg['release'],'V015')
         self.assertFalse(hasattr(d,'carrier'))
         self.assertFalse(hasattr(d,'carrier_rails'))
         self.assertEqual(d.mounting_x_centers_mm,(-39,39))
@@ -62,7 +62,7 @@ class ModelTests(unittest.TestCase):
             self.assertLess(result[key],.01)
         self.assertEqual(sum(k.startswith('rear_tool_clearance_') for k in result),4)
 
-    def test_v014_boss_trimming_is_constrained(self):
+    def test_v015_boss_trimming_is_constrained(self):
         d=self.d
         self.assertAlmostEqual(d.front_neck_width_mm,12.0)
         self.assertAlmostEqual(d.validate_mount_dimensions(),2.5)
@@ -81,7 +81,7 @@ class ModelTests(unittest.TestCase):
     def test_screw_pitch_drives_both_opening_edges_and_rear_profile(self):
         d=self.d
         p=d.adaptive_profile
-        self.assertEqual(self.cfg['release'],'V014')
+        self.assertEqual(self.cfg['release'],'V015')
         self.assertGreaterEqual(p['bottom_z']-p['screw_z'][0],
                                 d.compact_tab_half_height_mm)
         self.assertGreaterEqual(p['screw_z'][1]-p['top_z'],
@@ -107,7 +107,22 @@ class ModelTests(unittest.TestCase):
         self.assertGreaterEqual(p['outer_bulge_z'],self.d.arm_outer_rear_bulge_z_mm)
         self.assertGreaterEqual(p['top_slope_rear_web_y'],self.d.opening_rear_web_mm)
 
-    def test_v014_unified_front_service_cutter_is_one_solid(self):
+    def test_v015_nested_curvature_and_fastener_driven_control_points(self):
+        p=self.d.v015_inner_profile
+        es=self.d.v015_inner_boundary_edges()
+        self.assertEqual(len(es),5)
+        self.assertEqual(es[1].geomType(),'BEZIER')
+        self.assertEqual(es[2].geomType(),'BEZIER')
+        self.assertLess((es[1].endPoint()-es[2].startPoint()).Length,0.00001)
+        self.assertAlmostEqual(p['web_at_nose_mm'],9)
+        self.assertGreater(p['nose_y'],p['rear_bottom_y'])
+        shifted=dict(self.cfg)
+        shifted['board_screw_station_center_mm']+=2
+        q=Design(shifted).v015_inner_profile
+        self.assertNotEqual(q['middle_z'],p['middle_z'])
+        self.assertNotEqual(q['nose_y'],p['nose_y'])
+
+    def test_v015_unified_front_service_cutter_is_one_solid(self):
         for side in (-1,1):
             cut=self.d.arm_service_opening(side)
             self.assertEqual(len(cut.Solids()),1)
@@ -117,7 +132,7 @@ class ModelTests(unittest.TestCase):
                             self.d.rib_workplane().extrude(self.d.arm_thickness_mm).val().Volume())
         self.assertTrue(self.d.unified_front_u_opening)
 
-    def test_v014_source_step_hole_centers_are_kept_separate_from_nominal_mount(self):
+    def test_v015_source_step_hole_centers_are_kept_separate_from_nominal_mount(self):
         fixture=self.d.validate(self.parts)['waveshare_step_mount_reference']
         self.assertEqual(fixture['measured_x_pitch_mm'],114)
         self.assertEqual(fixture['measured_y_pitch_mm'],59.1)
@@ -126,14 +141,14 @@ class ModelTests(unittest.TestCase):
         self.assertFalse(fixture['registered_to_bracket'])
         self.assertTrue(__import__('pathlib').Path(ROOT/'reference/waveshare_0820_1_mounting_datums.json').exists())
 
-    def test_v014_smooth_root_blend_stays_clear_of_lowest_m3(self):
+    def test_v015_smooth_root_blend_stays_clear_of_lowest_m3(self):
         self.assertGreater(self.d.front_neck_blend_height_mm,0)
         p=self.d.adaptive_profile
         self.assertLess(self.d.arm_front_z_mm+self.d.arm_front_neck_start_above_datum_mm+
                         self.d.front_neck_blend_height_mm,p['screw_z'][0]-self.d.board_driver_access_d_mm/2)
         self.assertTrue(self.d.arm(-1).isValid())
 
-    def test_v014_slimmer_arm_opening_without_removing_screw_web(self):
+    def test_v015_slimmer_arm_opening_without_removing_screw_web(self):
         p=self.d.adaptive_profile
         self.assertAlmostEqual(p['bottom_z'],59.5)
         self.assertAlmostEqual(p['top_z'],91.5)
@@ -149,7 +164,7 @@ class ModelTests(unittest.TestCase):
         bad['arm_opening_rear_bottom_y_mm']=58
         with self.assertRaises(ValueError): Design(bad).validate_mount_dimensions()
 
-    def test_v014_four_rear_exit_tool_tunnels_are_unobstructed(self):
+    def test_v015_four_rear_exit_tool_tunnels_are_unobstructed(self):
         d=self.d
         for side in (-1,1):
             arm=self.parts['left_arm' if side<0 else 'right_arm']
@@ -164,7 +179,7 @@ class ModelTests(unittest.TestCase):
                 self.assertLess(arm.intersect(probe).Volume(),0.02)
                 self.assertGreater(y0+far,arm.BoundingBox().ymax+d.v014_rear_tool_overrun_mm-0.001)
 
-    def test_v014_mount_pitch_drives_real_saddle_and_arm_positions(self):
+    def test_v015_mount_pitch_drives_real_saddle_and_arm_positions(self):
         d=self.d
         self.assertEqual(d.effective_arm_pitch_mm,d.mount_hole_center_spacing_mm)
         self.assertEqual(d.effective_saddle_length_mm,108)
@@ -180,7 +195,7 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(changed.adaptive_profile['bottom_z'],
                          changed.adaptive_profile['screw_z'][0]+changed.compact_tab_half_height_mm)
 
-    def test_v014_four_compact_ears_and_screw_rear_paths(self):
+    def test_v015_four_compact_ears_and_screw_rear_paths(self):
         p=self.d.adaptive_profile
         self.assertAlmostEqual(p['bottom_z'],59.5)
         self.assertAlmostEqual(p['top_z'],91.5)
@@ -191,10 +206,10 @@ class ModelTests(unittest.TestCase):
         self.assertTrue(self.parts['main'].isValid())
         self.assertEqual(self.d.validate(self.parts)['v014_compact_tabs']['count'],4)
 
-    def test_v014_manufacturing_and_preview_outputs(self):
+    def test_v015_manufacturing_and_preview_outputs(self):
         for name in ('main.step','left_arm.step','right_arm.step',
-                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V014.step',
-                     'PRINTABLE_PARTS_V014.step','M3_DISPLAY_SCREWS_REFERENCE.step',
+                     'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V015.step',
+                     'PRINTABLE_PARTS_V015.step','M3_DISPLAY_SCREWS_REFERENCE.step',
                      'WAVESHARE_0820_DATUM_FIXTURE.step'):
             self.assertTrue((ROOT/'step'/name).exists(),name)
         self.assertTrue((ROOT/'stl/main.stl').exists())
