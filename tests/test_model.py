@@ -263,6 +263,35 @@ class ModelTests(unittest.TestCase):
         self.assertNotEqual(moved[0]['z_min_mm'],tabs[0]['z_min_mm'])
         self.assertNotEqual(moved[1]['z_max_mm'],tabs[1]['z_max_mm'])
 
+    def test_shared_tab_definition_and_separation_constraints(self):
+        d=self.d
+        local=d.mounting_tab_local_profile_mm
+        tabs=d.shared_mounting_tab_profiles_mm
+        self.assertEqual(len(tabs),4)
+        for tab in tabs:
+            for key,value in local.items():
+                self.assertEqual(tab[key],value)
+            self.assertAlmostEqual(tab['z_max_mm']-tab['z_min_mm'],
+                                   local['height_mm'])
+        self.assertAlmostEqual(d.validate_mounting_tab_separation(),
+                               d.board_screw_vertical_pitch_mm-local['height_mm'])
+        for pitch in (local['height_mm']-0.1,
+                      local['height_mm']+2*d.arm_opening_corner_radius_mm+1):
+            altered=dict(self.cfg)
+            altered['board_screw_vertical_pitch_mm']=pitch
+            with self.assertRaisesRegex(ValueError,
+                                        'tabs overlap|opening between independent tabs'):
+                Design(altered).validate_mounting_tab_separation()
+        changed=dict(self.cfg)
+        changed['board_screw_vertical_pitch_mm']+=2
+        moved=Design(changed).shared_mounting_tab_profiles_mm
+        self.assertEqual([t['height_mm'] for t in tabs],
+                         [t['height_mm'] for t in moved])
+        self.assertAlmostEqual(moved[0]['z_center_mm'],
+                               tabs[0]['z_center_mm']-1)
+        self.assertAlmostEqual(moved[1]['z_center_mm'],
+                               tabs[1]['z_center_mm']+1)
+
     def test_v016_rejects_unphysical_profile_offset(self):
         for field,value in [('v016_inner_lip_y_web_mm',6),
                             ('v016_outer_bulge_y_from_saddle_pitch_ratio',.3),
