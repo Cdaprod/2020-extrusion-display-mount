@@ -215,6 +215,8 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(p['outer']['lower_y'],47,places=5)
         self.assertAlmostEqual(p['outer']['shoulder_y'],16,places=5)
         self.assertAlmostEqual(p['outer']['bulge_z'],85.5,places=5)
+        self.assertGreaterEqual(d.v016_minimum_curved_spine_distance_mm(),
+                                d.v016_outer_inner_min_euclidean_web_mm)
         self.assertAlmostEqual(p['opening']['bottom_z'],59.5)
         self.assertAlmostEqual(p['opening']['top_z'],91.5)
         # Both contours and the printable saddle now depend on one fastener

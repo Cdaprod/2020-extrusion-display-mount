@@ -121,7 +121,10 @@ class Design:
         zl,zh=self.path_point(lo)[1],self.path_point(hi)[1]
         center_z=(zl+zh)/2
         back=self.upper_clamp_width_mm/2-self.arm_gusset_saddle_overlap_mm
-        lower=back+pitch*self.v016_outer_lower_rear_y_from_saddle_pitch_ratio
+        # Normalize against the canonical V015 screw pattern, then scale the
+        # reference-profile Y offsets consistently for any updated hole pitch.
+        pitch_scale=pitch/self.v016_reference_vertical_pitch_mm
+        lower=back+self.v016_reference_vertical_pitch_mm*pitch_scale*self.v016_outer_lower_rear_y_from_saddle_pitch_ratio
         bulge=back+pitch*self.v016_outer_bulge_y_from_saddle_pitch_ratio
         shoulder=back+pitch*self.v016_outer_shoulder_y_from_saddle_pitch_ratio
         bulge_z=center_z+pitch*self.v016_bulge_z_above_screw_mid_pitch_ratio
@@ -477,6 +480,43 @@ class Design:
             cq.Edge.makeLine(point(upper,hi),point(entry,hi)),
             cq.Edge.makeLine(point(entry,hi),point(entry,lo))]
 
+    def v016_minimum_curved_spine_distance_mm(self):
+        """Minimum planar (YZ) distance from curved aperture to true outer wire.
+
+        Unlike the historical same-Z Y offset, this measures the actual
+        Euclidean shortest distance to the line/arc exterior. It catches
+        narrowing where the rear shoulder is strongly sloped.
+        """
+        inner_edges=self.v015_inner_boundary_edges()[1:3]
+        profile=self.v015_inner_profile
+        exterior=[]
+        for edge in self.rib_workplane().wire().val().Edges():
+            count=max(8,math.ceil(edge.Length()/0.5))
+            points=[edge.positionAt(i/count) for i in range(count+1)]
+            exterior.extend(zip(points[:-1],points[1:]))
+        minimum=float('inf')
+        for edge in inner_edges:
+            count=max(16,math.ceil(edge.Length()/0.35))
+            for i in range(count+1):
+                p=edge.positionAt(i/count)
+                for a,b in exterior:
+                    # Only the outside load-bearing spine, not the front seat,
+                    # is relevant to the web between curved contours.
+                    if max(a.y,b.y)<profile['rear_top_y']-4:
+                        continue
+                    if max(a.z,b.z)<profile['bottom_z']-8 or min(a.z,b.z)>profile['top_z']+8:
+                        continue
+                    dy=b.y-a.y; dz=b.z-a.z
+                    length_squared=dy*dy+dz*dz
+                    if length_squared<1e-12:
+                        continue
+                    t=max(0,min(1,((p.y-a.y)*dy+(p.z-a.z)*dz)/length_squared))
+                    distance=math.hypot(p.y-(a.y+t*dy),p.z-(a.z+t*dz))
+                    minimum=min(minimum,distance)
+        if not math.isfinite(minimum):
+            raise ValueError('Cannot measure real outer-to-inner side-profile web')
+        return minimum
+
     def arm_service_opening(self,side):
         """V015: single curved front-open recess, not a box plus capsule."""
         if side not in (-1,1):
@@ -502,6 +542,9 @@ class Design:
                 min_web=min(min_web,outside-at.y)
         if min_web<self.v015_min_sampled_rear_web_mm:
             raise ValueError(f'V015 curvature intrudes on rear spine: {min_web:.2f} mm')
+        minimum=self.v016_minimum_curved_spine_distance_mm()
+        if minimum<self.v016_outer_inner_min_euclidean_web_mm:
+            raise ValueError(f'V016 true planar spine web too thin: {minimum:.3f} mm')
         wire=cq.Wire.assembleEdges(edges)
         cutter=cq.Solid.extrudeLinear(wire,[],cq.Vector(self.arm_thickness_mm+2,0,0))
         return check_solid('v015_curved_g1_front_opening',
@@ -762,6 +805,7 @@ class Design:
             'outer_profile_controls_mm':self.v016_outer_controls,
             'inner_profile_controls_mm':self.v015_inner_profile,
             'inner_rear_lip_offset_mm':self.v016_inner_lip_y_web_mm,
+            'minimum_actual_planar_web_mm':round(self.v016_minimum_curved_spine_distance_mm(),3),
             'arm_center_pitch_mm':self.effective_arm_pitch_mm,
             'saddle_length_mm':self.effective_saddle_length_mm,
             'hardware_datum_mode':self.v016_hardware_datum_mode,
@@ -1085,7 +1129,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V015 CURVED-SIDE DATUM',
+    ax.set_title(f'NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  {d.cfg["release"]} CURVED-SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
