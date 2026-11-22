@@ -171,8 +171,10 @@ class Design:
             raise ValueError('V010 front draft must reach the rear structural web')
         if self.compact_tab_half_height_mm < self.board_driver_access_d_mm/2+self.v014_min_tab_wall_mm:
             raise ValueError('V014 upper ear too close to rear screwdriver corridor')
-        if self.v014_lower_ear_root_relief_mm<=0 or self.v014_lower_ear_root_relief_mm>=lo if False else False:
-            raise ValueError('Invalid tab relief')
+        if self.v014_min_tab_wall_mm<=0 or self.v014_tab_edge_allowance_mm<0:
+            raise ValueError('M3 compact-ear bearing wall and edge allowance must be nonnegative')
+        if self.v014_lower_ear_root_relief_mm<=0:
+            raise ValueError('Lower-ear root relief must be positive')
         if radial<self.min_screw_head_radial_wall_mm:
             raise ValueError('M3 driver passage exits the structural arm')
         if self.v013_rear_tool_overrun_mm<=0:
