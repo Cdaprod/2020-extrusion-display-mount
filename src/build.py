@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V011.
+"""Parametric Neptune-2/2020 saddle-mounted touchscreen support V012.
 
 Input rail: unmodified user-supplied 2020-2O STEP, source axis +Z, slots +/-Y.
 Assembly: original source (x,y,z) maps to (z,x,y): rail longitudinal +X,
@@ -337,49 +337,41 @@ class Design:
         return wire.close()
 
     def arm_service_opening(self,side):
-        """Front-side U service throat (Y~0..20, Z~60..80), rear diagonal intact."""
+        """One open-front YZ cavity, not a fused capsule and polygon.
+
+        The only two fillets visible in the remaining arm are the integral
+        back corners of this cutter. The cutter's own front rounding is
+        deliberately outside the real arm, avoiding a second slot, shoulder,
+        and non-tangent internal lip. Both M3 tab endpoints depend on their
+        fastener positions via adaptive_profile.
+        """
         if side not in (-1,1):
             raise ValueError('side must be -1 or +1')
-        profile=self.adaptive_profile
-        zlo=profile['bottom_z']
-        zhi=profile['top_z']
-        front=self.arm_front_y_mm+self.arm_opening_front_wall_mm
-        cavity=(cq.Workplane('YZ')
-                .polyline([(front,zlo),(profile['rear_bottom_y'],zlo),
-                           (profile['rear_top_y'],zhi),(front,zhi)])
+        p=self.adaptive_profile
+        zlo,zhi=p['bottom_z'],p['top_z']
+        entry=self.arm_front_y_mm-self.service_cutter_front_overshoot_mm
+        radius=self.arm_opening_corner_radius_mm
+        if entry>=self.arm_front_y_mm-2*radius:
+            raise ValueError('Unified U cutter front rounding would touch a mounting tab')
+        if p['rear_bottom_y']<=self.arm_front_y_mm+self.arm_opening_front_wall_mm:
+            raise ValueError('U opening has insufficient rear screwdriver reach')
+        # Four-sided opening footprint; precise G1 corner fillets are made
+        # on its X-parallel edges. No second bore or capsule is added.
+        cutter=(cq.Workplane('YZ')
+                .polyline([(entry,zlo),(p['rear_bottom_y'],zlo),
+                           (p['rear_top_y'],zhi),(entry,zhi)])
                 .close().extrude(self.arm_thickness_mm+2)
-                .edges('|X').fillet(self.arm_opening_corner_radius_mm)
+                .edges('|X').fillet(radius)
                 .val().translate((-1,0,0)))
-        branch=self.cfg['service_left' if side<0 else 'service_right']
-        width=branch['throat_width_mm']
-        margin=self.service_throat_min_boundary_margin_mm
-        lower_limit=zlo+width/2+margin
-        upper_limit=zhi-width/2-margin
-        if lower_limit>upper_limit:
-            raise ValueError('Front service throat wider than pitch-dependent aperture')
-        center=min(max(branch['throat_center_z_mm'],lower_limit),upper_limit)
-        if not (center-width/2>=zlo+margin and center+width/2<=zhi-margin):
-            raise ValueError('Front throat must remain inside pitch-dependent service cavity')
-        if not branch['throat_start_y_mm']<self.arm_front_y_mm-1:
-            raise ValueError('Front throat does not clear front edge')
-        if branch['throat_end_y_mm']<=front+4:
-            raise ValueError('Front throat fails to reach cavity')
-        # Cutter opens toward the SCREEN-side (negative Y), unlike V007.
-        # The entire rear structural spine survives at Y>inner cavity.
-        throat=(cq.Workplane('YZ')
-                .center((branch['throat_start_y_mm']+branch['throat_end_y_mm'])/2,center)
-                .slot2D(branch['throat_end_y_mm']-branch['throat_start_y_mm']+width,
-                        width,angle=0)
-                .extrude(self.arm_thickness_mm+2).val().translate((-1,0,0)))
-        return cavity.fuse(throat).clean()
+        return check_solid('unified_front_u_cutter',cutter.clean())
 
     def trim_forward_arm_face(self, arm, side):
-        """G1-free drafted side relief: retain only a compact M3-safe front neck.
+        """Lofted full-width gusset -> narrow M3 front neck transition.
 
-        A pair of triangular XY cutters gradually reduce the forward mounting
-        face from 16 mm to a nominal 12 mm, tapering outward into the existing
-        full-thickness diagonal support. The M3 counterbore floor, Ø7 access
-        corridor, and every datum remain unchanged. No floating boss or tab.
+        V010/V011 used an abrupt extruded XY wedge beginning at fixed Z,
+        leaving hard root ledges at the two front gussets. This construction
+        derives Z from the lowest M3 station and eases side material removal
+        in five deterministic ruled sections. It does not notch the M3 seat.
         """
         trim=self.arm_front_rail_side_trim_mm
         if trim<=0:
@@ -389,18 +381,32 @@ class Design:
         ymin=self.arm_front_y_mm+self.arm_top_land_mm
         yend=ymin+self.arm_front_rail_taper_depth_mm
         z0=self.arm_front_z_mm+self.arm_front_neck_start_above_datum_mm
+        h=self.front_neck_blend_height_mm
         z1=self.path_point(self.mounting_stations_s_mm[1])[1]+self.upper_boss_cap_extra_mm+2
-        if z0 >= self.path_point(self.mounting_stations_s_mm[0])[1]-self.board_driver_access_d_mm/2:
-            raise ValueError('V010 tapered trim misses lower M3 station')
+        zl=self.adaptive_profile['screw_z'][0]
+        if not (h>1 and z0+h<zl-self.board_driver_access_d_mm/2-1):
+            raise ValueError('Front root blend must terminate below lower M3 passage')
+        if z1<=z0+h:
+            raise ValueError('Upper mounting region below neck blend')
         for sign in (-1,1):
             edge=center+sign*half
-            outer=edge+sign*1.0
-            inset=edge-sign*trim
-            profile=[(outer,ymin-2),(inset,ymin-2),(inset,ymin),
-                     (edge,yend),(outer,yend)]
-            cutter=cq.Workplane('XY').polyline(profile).close().extrude(z1-z0).val()
-            arm=arm.cut(cutter.translate((0,0,z0)))
-        return arm.clean()
+            outer=edge+sign
+            wires=[]
+            for fraction,z in ((0,z0),(.25,z0+.25*h),(.5,z0+.5*h),
+                               (.75,z0+.75*h),(1,z0+h),(1,z1)):
+                easing=3*fraction*fraction-2*fraction*fraction*fraction
+                inset=edge-sign*max(.02,trim*easing)
+                xy=[(outer,ymin-2),(inset,ymin-2),(inset,ymin),
+                    (edge,yend),(outer,yend)]
+                w=cq.Workplane('XY').polyline(xy).close().wire().val()
+                wires.append(w.translate((0,0,z)))
+            # Ruled loft is bounded by its control sections. An unconstrained
+            # high-order loft can overshoot catastrophically for long arms.
+            relief=cq.Solid.makeLoft(wires,ruled=True)
+            if not relief.isValid():
+                raise ValueError('Invalid blended front-neck relief')
+            arm=arm.cut(relief)
+        return check_solid('lofted_front_neck',arm.clean())
 
     def arm(self,side):
         """The sculpted arm itself carries M3 seats and rear driver passages.
@@ -582,6 +588,33 @@ class Design:
         report['m3_pocket_floor_wall_mm']=round(self.mount_pad_axial_thickness_mm-self.board_counterbore_depth_mm,4)
         report['m3_pocket_radial_wall_mm']=round(self.validate_mount_dimensions(),4)
         profile=self.adaptive_profile
+        report['v012_unified_u_cutter']=True
+        report['v012_neck_root_blend_height_mm']=self.front_neck_blend_height_mm
+        report['v012_mount_tab_clearance_from_screw_z_mm']=[
+            round(profile['bottom_z']-profile['screw_z'][0],4),
+            round(profile['screw_z'][1]-profile['top_z'],4)]
+        fixture=json.loads((ROOT/self.hardware_reference_manifest_path).read_text())
+        measured=fixture['reference_mounts_xy_mm']
+        xs=sorted(set(p[0] for p in measured));ys=sorted(set(p[1] for p in measured))
+        if len(xs)!=2 or len(ys)!=2 or len(measured)!=4:
+            raise ValueError('Waveshare STEP datum manifest must define four rectangle-corner centers')
+        observed_x_pitch=round(xs[-1]-xs[0],4)
+        observed_z_pitch=round(ys[-1]-ys[0],4)
+        report['waveshare_step_mount_reference']={
+            'source_sha256':fixture['source_sha256'],
+            'source_bbox_mm':fixture['source_bbox_mm'],
+            'native_centers_xy_mm':measured,
+            'hole_diameter_mm':fixture['hole_diameter_mm'],
+            'measured_x_pitch_mm':observed_x_pitch,
+            'measured_y_pitch_mm':observed_z_pitch,
+            'modeled_x_pitch_mm':self.mount_hole_center_spacing_mm,
+            'modeled_z_pitch_mm':self.board_screw_vertical_pitch_mm,
+            'x_pitch_mismatch_mm':round(self.mount_hole_center_spacing_mm-observed_x_pitch,4),
+            'z_pitch_mismatch_mm':round(self.board_screw_vertical_pitch_mm-observed_z_pitch,4),
+            'registered_to_bracket':False,
+            'approved_to_print_for_hardware_fit':False}
+        if self.hardware_reference_fit_required:
+            raise ValueError('Waveshare STEP native hole datum is not registered to 2020 saddle; physical-fit mode cannot pass')
         report['v011_pitch_driven_support_profile']=profile
         report['v011_required_m3_support_radius_mm']=self.screw_support_radius_mm
         report['v011_min_screw_web_mm']=self.min_screw_envelope_web_mm
@@ -600,7 +633,7 @@ class Design:
         report['detached_carrier_count']=0
         report['integral_arm_m3_holes']=4
         report['rear_sheet_removed']=True
-        report['status']='PASS V011: screw-station-driven aperture, roof and rear support web, integral M3 arms'
+        report['status']='PASS V012: unified U aperture and tapered arm-root relief; hardware datum not yet registered'
         return report
 
 
@@ -610,6 +643,46 @@ def export_step(shape,path):
 
 def export_stl(shape,path):
     exporters.export(shape,str(path),exportType='STL',tolerance=0.08,angularTolerance=0.15)
+
+
+def waveshare_mount_datum_fixture(d):
+    """Simplified standalone footprint from user STEP hole axes, not the PCB."""
+    m=json.loads((ROOT/d.hardware_reference_manifest_path).read_text())
+    bb=m['source_bbox_mm']
+    shell=block(bb['xmin'],bb['ymin'],0,bb['xmax']-bb['xmin'],
+                bb['ymax']-bb['ymin'],1.6)
+    for x,y in m['reference_mounts_xy_mm']:
+        shell=shell.cut(cyl(m['hole_diameter_mm']/2,3,(x,y,-.5)))
+    return check_solid('waveshare_hole_pattern_fixture',shell.clean())
+
+
+def render_waveshare_datum(d,output):
+    """Auditable plot of native STEP-hole datum vs unregistered V012 proposal."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle, Circle
+    m=json.loads((ROOT/d.hardware_reference_manifest_path).read_text())
+    bb=m['source_bbox_mm']
+    fig,ax=plt.subplots(figsize=(11,5.5),dpi=140)
+    ax.add_patch(Rectangle((bb['xmin'],bb['ymin']),
+                           bb['xmax']-bb['xmin'],bb['ymax']-bb['ymin'],
+                           facecolor='#dbeafe',edgecolor='#334155',lw=2))
+    for x,y in m['reference_mounts_xy_mm']:
+        ax.add_patch(Circle((x,y),m['hole_diameter_mm']/2,
+                            facecolor='#ffffff',edgecolor='#1d4ed8',lw=2))
+        ax.plot(x,y,'o',color='#1d4ed8',markersize=5)
+        ax.text(x+2,y+(3 if y>0 else -4),f'({x:g}, {y:g})',fontsize=8)
+    ax.plot([],[],'o',color='#1d4ed8',label='Source STEP: four circled hole centers')
+    ax.set_xlim(-112,112);ax.set_ylim(-47,47);ax.set_aspect('equal')
+    ax.set_title('Waveshare 0820-1 STEP / extracted four-hole datum — V012',weight='bold')
+    ax.set_xlabel('Native STEP X / mm');ax.set_ylabel('Native STEP Y / mm')
+    ax.text(-103,-43,'Measured: X pitch 114, Y pitch 59.1 mm. Bracket config still 78 × 45; NOT FIT-CERTIFIED.',
+            fontsize=9,color='#991b1b')
+    ax.grid(alpha=.18);fig.tight_layout()
+    outpath=output/'waveshare_mount_datums.png'
+    fig.savefig(outpath,dpi=140);plt.close(fig)
+    return str(outpath.relative_to(output.parent))
 
 
 def render_views(parts, output):
@@ -798,7 +871,7 @@ def render_engineering_side_profile(d, output):
     ax.set_ylabel('Z height (mm)',fontsize=11)
     ax.set_xlim(-58,112);ax.set_ylim(-27,140)
     ax.set_aspect('equal');ax.grid(alpha=.17)
-    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V011 FASTENER-DRIVEN SIDE DATUM',
+    ax.set_title('NEPTUNE 2  |  2020 EXTRUSION DISPLAY SUPPORT  |  V012 FASTENER-DRIVEN SIDE DATUM',
                  fontsize=13,weight='bold',pad=18)
     fig.text(.12,.045,'Derived from source geometry + provisional config; not measured display hardware.',
              fontsize=9,color='#64748b')
@@ -822,6 +895,9 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
         export_step(parts[name],out/'step'/f'{name}.step')
         if name not in ('rail','screen'):
             export_stl(parts[name],out/'stl'/f'{name}.stl')
+    # Source-STEP-derived four-hole fixture (not a manufactured PCB).
+    export_step(waveshare_mount_datum_fixture(d),
+                out/'step'/'WAVESHARE_0820_DATUM_FIXTURE.step')
     # Explicit fastener reference solids (not printable).
     export_step(cq.Compound.makeCompound(parts['board_screws']),
                 out/'step'/'M3_DISPLAY_SCREWS_REFERENCE.step')
@@ -830,10 +906,10 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     # Assembly compound preserves separate rail, main, keeper, screen and hardware.
     assembly=cq.Compound.makeCompound([parts[k] for k in ['rail','main','keeper','screen']]
                                       +parts['board_screws']+parts['clamp_screws'])
-    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V011.step')
+    export_step(assembly,out/'step'/'COMPLETE_2020_TOUCHSCREEN_ASSEMBLY_V012.step')
     # Printable only: main and keeper should never include reference rail or screen.
     printable=cq.Compound.makeCompound([parts['main'],parts['keeper']])
-    export_step(printable,out/'step'/'PRINTABLE_PARTS_V011.step')
+    export_step(printable,out/'step'/'PRINTABLE_PARTS_V012.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -841,6 +917,7 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     if with_previews:
         datum=render_engineering_side_profile(d,out/'previews')
         if datum: previews.append(datum)
+        previews.append(render_waveshare_datum(d,out/'previews'))
     print('BUILD PASS',report['status'])
     print('volumes', {k:round(parts[k].Volume()) for k in ['main','keeper','rail']})
     print('previews',previews)

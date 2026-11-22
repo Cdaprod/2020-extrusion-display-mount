@@ -45,9 +45,9 @@
   "rail_volume_mm3": 33082.04,
   "upper_saddle_volume_mm3": 70060.79,
   "keeper_volume_mm3": 26554.94,
-  "left_arm_volume_mm3": 62982.86,
-  "right_arm_volume_mm3": 62222.3,
-  "main_volume_mm3": 198217.0,
+  "left_arm_volume_mm3": 61845.62,
+  "right_arm_volume_mm3": 61845.62,
+  "main_volume_mm3": 196703.09,
   "main_vs_rail_overlap_mm3": 0.0,
   "keeper_vs_rail_overlap_mm3": 0.0,
   "main_vs_keeper_overlap_mm3": 0.0,
@@ -80,6 +80,50 @@
   ],
   "m3_pocket_floor_wall_mm": 3.2,
   "m3_pocket_radial_wall_mm": 2.5,
+  "v012_unified_u_cutter": true,
+  "v012_neck_root_blend_height_mm": 8,
+  "v012_mount_tab_clearance_from_screw_z_mm": [
+    11.0,
+    12.0
+  ],
+  "waveshare_step_mount_reference": {
+    "source_sha256": "c501cd74045d34d4b53eab16fc685bbd9e5ccb5f2d6d479fd9ca9fecf300a367",
+    "source_bbox_mm": {
+      "xmin": -104,
+      "xmax": 104,
+      "ymin": -34.9,
+      "ymax": 34.9,
+      "zmin": -3.67,
+      "zmax": 12.33
+    },
+    "native_centers_xy_mm": [
+      [
+        -68.9,
+        -29.9
+      ],
+      [
+        -68.9,
+        29.2
+      ],
+      [
+        45.1,
+        -29.9
+      ],
+      [
+        45.1,
+        29.2
+      ]
+    ],
+    "hole_diameter_mm": 2,
+    "measured_x_pitch_mm": 114.0,
+    "measured_y_pitch_mm": 59.1,
+    "modeled_x_pitch_mm": 78,
+    "modeled_z_pitch_mm": 45,
+    "x_pitch_mismatch_mm": -36.0,
+    "z_pitch_mismatch_mm": -14.1,
+    "registered_to_bracket": false,
+    "approved_to_print_for_hardware_fit": false
+  },
   "v011_pitch_driven_support_profile": {
     "bottom_z": 64.0,
     "top_z": 86.0,
@@ -123,10 +167,10 @@
   "detached_carrier_count": 0,
   "integral_arm_m3_holes": 4,
   "rear_sheet_removed": true,
-  "status": "PASS V011: screw-station-driven aperture, roof and rear support web, integral M3 arms",
+  "status": "PASS V012: unified U aperture and tapered arm-root relief; hardware datum not yet registered",
   "rail_reference_sha256": "978f92d68d8ce3ca31434f931257e2c80632c417ef78b4b6f0189b26e5b4c9f0",
   "design_config": {
-    "release": "V011",
+    "release": "V012",
     "units": "mm",
     "rail_reference_length_mm": 120,
     "rail_nominal_size_mm": 20,
@@ -171,7 +215,7 @@
     "display_side_window_length_mm": 48,
     "rear_access_tool_diameter_mm": 4.2,
     "nominal_display_reference_thickness_mm": 5,
-    "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured. V009 corrects through-thickness port relief notches that crossed the M3 screw centerlines; retain a continuous central rail spine and integrated screw-bearing pads, with rear-open counterbores. V009 structural correction: no separate carrier. Both arms directly carry the M3 head seats, \u00d83.4 through-bores, and rear \u00d87 tool corridors; remaining front seat wall 3.2 mm. Provisional stations S=20/65 avoid front opening while measured PCB pattern remains unknown. V010: nominal \u00d812 front neck around \u00d87 rear driver access, X width tapered into the full structural arm; top excess trimmed to 9.5 mm above upper M3; analytic tangent arcs on the structural outer profile and a 1 mm keeper vertical-edge fillet. Critical bores, mating planes, source rail geometry and floor unchanged; print strength remains unqualified. V011: screw stations determine side opening top/bottom, rear opening contour, and exterior shoulder/bulge height. A full \u00d87 tool-path plus 4 mm web envelope drives key planes; roof and lower web are checked against tangentially filleted cuts; no independent fixed Z opening.",
+    "provenance": "V008 user annotated IMG_9112/IMG_9114: side relief moved to front Y0..20 Z60..80 while rear spine stays intact. Two independently adjustable, vertical symmetric rail/support-arm X pitches. M3 x 6-8 fasteners; parametric counterbore/head, floor wall and radial wall. Slimmer rails and rear contour. Actual PCB and connector geometry unmeasured. V009 corrects through-thickness port relief notches that crossed the M3 screw centerlines; retain a continuous central rail spine and integrated screw-bearing pads, with rear-open counterbores. V009 structural correction: no separate carrier. Both arms directly carry the M3 head seats, \u00d83.4 through-bores, and rear \u00d87 tool corridors; remaining front seat wall 3.2 mm. Provisional stations S=20/65 avoid front opening while measured PCB pattern remains unknown. V010: nominal \u00d812 front neck around \u00d87 rear driver access, X width tapered into the full structural arm; top excess trimmed to 9.5 mm above upper M3; analytic tangent arcs on the structural outer profile and a 1 mm keeper vertical-edge fillet. Critical bores, mating planes, source rail geometry and floor unchanged; print strength remains unqualified. V011: screw stations determine side opening top/bottom, rear opening contour, and exterior shoulder/bulge height. A full \u00d87 tool-path plus 4 mm web envelope drives key planes; roof and lower web are checked against tangentially filleted cuts; no independent fixed Z opening. V012: one filleted U-cutter instead of joined slot2D + rectangle; smoothstep-like lofted front neck root; source-STEP-extracted four-hole datum independently tracked because provisional 78x45 mounting pattern does not physically match 114x59.1 reference.",
     "require_perpendicular_display": true,
     "require_display_centering": true,
     "arm_outer_rear_shoulder_y_mm": 16,
@@ -262,6 +306,11 @@
     "opening_rear_extra_y_mm": 9,
     "outer_rear_bulge_margin_mm": 10,
     "support_profile_adaptive": true,
-    "service_throat_min_boundary_margin_mm": 1
+    "service_throat_min_boundary_margin_mm": 1,
+    "front_neck_blend_height_mm": 8,
+    "unified_front_u_opening": true,
+    "service_cutter_front_overshoot_mm": 18,
+    "hardware_reference_manifest_path": "reference/waveshare_0820_1_mounting_datums.json",
+    "hardware_reference_fit_required": false
   }
 }

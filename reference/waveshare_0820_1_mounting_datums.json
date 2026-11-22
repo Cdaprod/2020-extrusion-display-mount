@@ -1,0 +1,44 @@
+{
+  "source_filename": "0820-1.stp",
+  "source_sha256": "c501cd74045d34d4b53eab16fc685bbd9e5ccb5f2d6d479fd9ca9fecf300a367",
+  "source_type": "Waveshare user-uploaded STEP 3D mechanical solid (not committed binary)",
+  "units": "mm",
+  "derivation": "CadQuery/OCP: CAD solid cylindrical face axes aligned ±Z, radius 1.0 at 4 circled mounting pad locations, each accompanied by coaxial radius 2.75 cylinder; inspected 2026-11-22",
+  "source_bbox_mm": {
+    "xmin": -104,
+    "xmax": 104,
+    "ymin": -34.9,
+    "ymax": 34.9,
+    "zmin": -3.67,
+    "zmax": 12.33
+  },
+  "reference_mounts_xy_mm": [
+    [
+      -68.9,
+      -29.9
+    ],
+    [
+      -68.9,
+      29.2
+    ],
+    [
+      45.1,
+      -29.9
+    ],
+    [
+      45.1,
+      29.2
+    ]
+  ],
+  "hole_diameter_mm": 2,
+  "coaxial_boss_radius_mm": 2.75,
+  "horizontal_pitch_mm": 114,
+  "vertical_pitch_mm": 59.1,
+  "midpoint_xy_mm": [
+    -11.9,
+    -0.35
+  ],
+  "orientation": "STEP native XY plane, positive Z normal. NOT pre-registered to bracket world XZ; screen origin and handedness require physical alignment.",
+  "status": "source measured geometry; candidate four pads selected from user's marked image; assembly configuration not yet dimensionally matched",
+  "caveat": "M3x6-8 candidate fastener use in existing bracket is not validated by the native STEP's Ø2 mounting holes. Do not increase source holes or claim a fit without selected standoff/fastener hardware and orientation."
+}
