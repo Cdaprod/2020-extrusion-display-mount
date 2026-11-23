@@ -12,6 +12,10 @@ on:
       - '.github/workflows/regenerate-cad.yml'
   workflow_dispatch:
 
+concurrency:
+  group: regenerate-cad-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -44,5 +48,10 @@ jobs:
           git add -A step/ stl/ previews/ docs/validation.json
           if ! git diff --cached --quiet; then
             git commit -m "build(cad): regenerate integral-arm geometry, STEP/STL, and previews"
+            git fetch origin "${GITHUB_REF_NAME}"
+            if [ "$(git rev-parse HEAD^)" != "$(git rev-parse FETCH_HEAD)" ]; then
+              echo "::error::Source branch advanced during build; refusing stale artifact push"
+              exit 1
+            fi
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
