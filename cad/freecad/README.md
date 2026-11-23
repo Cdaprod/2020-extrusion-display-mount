@@ -16,6 +16,6 @@ The keeper is 138 × 42 × 6 mm, spans the saddle, and has four 4.5 mm clearance
 
 At 53, 59.1 and 65 mm vertical pitch the native fused mount and separate keeper were valid single solids; modeled rail and keeper overlap were zero. The nominal main bounds are 138 × 81 × 132.33 mm, within the configured Neptune 2 base profile's 235 × 235 × 250 mm build volume. This is a bounding-box check only. The upper cross member and arm interiors may require supports depending on orientation; no slicer analysis has been performed.
 
-The Python generator retains a different curved arm profile and coordinate system. Its lower root-relief and front-neck blend previously rejected 65 mm pitch. A working source change shortens those transitions as the lower screw descends; this does not yet make the generated geometry identical to the native model. STEP and STL files marked `working` are CAD review exports; the keeper remains a separate part.
+The Python generator retains a different curved arm profile and coordinate system. Its lower root-relief and front-neck blend previously rejected 65 mm pitch. The generator now shortens those transitions as the lower screw descends and locates its cross member at the upper rear web. Its full validation passed at 53, 59.1 and 65 mm; its round bosses, 16 mm arms and curved opening remain different from the native 10 mm arms and angular opening. STEP and STL files marked `working` are CAD review exports; the keeper remains a separate part.
 
 ![Connected working mount](mount-working-isometric.png)

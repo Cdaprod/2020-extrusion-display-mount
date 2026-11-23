@@ -45,9 +45,9 @@
   "rail_volume_mm3": 33082.04,
   "upper_saddle_volume_mm3": 93510.29,
   "keeper_volume_mm3": 35626.94,
-  "left_arm_volume_mm3": 57487.86,
-  "right_arm_volume_mm3": 57487.86,
-  "main_volume_mm3": 214026.93,
+  "left_arm_volume_mm3": 57549.33,
+  "right_arm_volume_mm3": 57549.33,
+  "main_volume_mm3": 215012.98,
   "main_vs_rail_overlap_mm3": 0.0,
   "keeper_vs_rail_overlap_mm3": 0.0,
   "main_vs_keeper_overlap_mm3": 0.0,
@@ -238,7 +238,7 @@
       12.95,
       72.05
     ],
-    "lower_root_relief_mm": 6,
+    "lower_root_relief_mm": 5.300000000000004,
     "upper_cap_z_mm": 112.55,
     "pitch_drives_saddle_length": true
   },

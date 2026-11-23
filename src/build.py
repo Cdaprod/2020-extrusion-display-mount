@@ -197,6 +197,13 @@ class Design:
         return self.board_driver_access_d_mm/2+self.min_screw_envelope_web_mm
 
     @property
+    def effective_lower_root_relief_mm(self):
+        """Keep the lower ear relief above the front mounting datum."""
+        zl=self.path_point(self.mounting_stations_s_mm[0])[1]
+        end=zl-self.compact_tab_half_height_mm-self.v014_tab_undercut_end_gap_mm
+        return min(self.v014_lower_ear_root_relief_mm,end-self.arm_front_z_mm)
+
+    @property
     def rib_lower_spine_start_z(self):
         # Exterior rear diagonal begins at the saddle foot; no fixed opening
         # station may assume the foot remains at the V012 nominal height.
@@ -345,8 +352,8 @@ class Design:
         if self.board_screw_clearance_d_mm>=self.board_screw_head_diameter_mm:
             raise ValueError('M3 bore exceeds head diameter')
         lo,hi=self.mounting_stations_s_mm
-        if self.v014_lower_ear_root_relief_mm>=lo-self.arm_front_neck_start_above_datum_mm:
-            raise ValueError('Lower-ear root relief too deep')
+        if self.effective_lower_root_relief_mm<=0.25:
+            raise ValueError('Lower screw position leaves no room for the ear root relief')
         if self.effective_saddle_length_mm<self.effective_arm_pitch_mm+self.arm_thickness_mm+2*self.v014_saddle_side_margin_mm-.001:
             raise ValueError('Saddle cannot support arm centerline pitch')
         if not (0<lo<hi<self.display_height_along_slope_mm):
@@ -744,8 +751,10 @@ class Design:
         center=side*self.effective_arm_pitch_mm/2
         ymin=self.arm_front_y_mm+self.arm_top_land_mm
         yend=ymin+self.arm_front_rail_taper_depth_mm
-        h=self.front_neck_blend_height_mm
         zl=self.adaptive_profile['screw_z'][0]
+        # Retain the lower screw's driver clearance as the lower station moves.
+        h=min(self.front_neck_blend_height_mm,
+              zl-self.board_driver_access_d_mm/2-1.25-(self.arm_front_z_mm-0.25))
         nominal_z0=self.arm_front_z_mm+self.arm_front_neck_start_above_datum_mm
         # Keep the blend below the lower driver envelope when the measured
         # screw pitch moves that station down. The configured datum is the
@@ -789,7 +798,7 @@ class Design:
         screw_z=self.adaptive_profile['screw_z'][0]
         ear_start=screw_z-self.compact_tab_half_height_mm
         z_end=ear_start-self.v014_tab_undercut_end_gap_mm
-        z_start=z_end-self.v014_lower_ear_root_relief_mm
+        z_start=z_end-self.effective_lower_root_relief_mm
         front=self.arm_front_y_mm+self.arm_top_land_mm
         entry=self.arm_front_y_mm-self.service_cutter_front_overshoot_mm-3
         cut=(cq.Workplane('YZ')
@@ -856,10 +865,16 @@ class Design:
         self.validate_mount_dimensions()
         clamp=self.upper_clamp()
         la,ra=self.arm(-1),self.arm(1)
-        tie_y=self.v016_outer_controls['lower_y']-9
+        # Tie the arms at the upper rear web, aligned to the midpoint of the
+        # display screw stations, rather than alongside the extrusion saddle.
+        outer=self.v016_outer_controls
+        mid_z=sum(self.adaptive_profile['screw_z'])/2
+        fraction=(mid_z-self.rib_lower_spine_start_z)/(outer['bulge_z']-self.rib_lower_spine_start_z)
+        rear_y=outer['lower_y']+fraction*(outer['bulge_y']-outer['lower_y'])
+        tie_y=rear_y-8
         cross=block(-self.effective_arm_pitch_mm/2-self.arm_thickness_mm/2,
-                    tie_y,self.bridge_top,
-                    self.effective_arm_pitch_mm+self.arm_thickness_mm,8,9)
+                    tie_y,mid_z-5,
+                    self.effective_arm_pitch_mm+self.arm_thickness_mm,8,10)
         return check_solid('integrated_main_frame',union(clamp,la,ra,cross))
 
     def screen_reference(self):
@@ -1017,7 +1032,7 @@ class Design:
             'count':4,'height_mm':2*self.compact_tab_half_height_mm,
             'screw_x_mm':list(self.mounting_x_centers_mm),
             'screw_s_mm':list(self.mounting_stations_s_mm),
-            'lower_root_relief_mm':self.v014_lower_ear_root_relief_mm,
+            'lower_root_relief_mm':self.effective_lower_root_relief_mm,
             'upper_cap_z_mm':self.adaptive_profile['screw_z'][1]+self.compact_tab_half_height_mm,
             'pitch_drives_saddle_length':True}
         report['integral_arm_mount_stations_s_mm']=list(self.mounting_stations_s_mm)

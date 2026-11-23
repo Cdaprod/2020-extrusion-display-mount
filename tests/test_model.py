@@ -366,6 +366,20 @@ class ModelTests(unittest.TestCase):
         nominal=Design(self.cfg).integrated_support()
         self.assertTrue(nominal.isValid())
 
+    def test_vertical_pitch_range_retains_four_screw_bearing_arms(self):
+        for pitch in (53, 59.1, 65):
+            cfg=dict(self.cfg)
+            cfg['board_screw_vertical_pitch_mm']=pitch
+            d=Design(cfg)
+            main=d.integrated_support()
+            self.assertTrue(main.isValid(), pitch)
+            self.assertEqual(len(main.Solids()),1, pitch)
+            self.assertGreater(d.effective_lower_root_relief_mm,0)
+            for side in (-1,1):
+                tabs=d.mounting_tab_profiles_for_arm(side)
+                self.assertAlmostEqual(tabs[1]['z_center_mm']-tabs[0]['z_center_mm'],pitch)
+                self.assertTrue(d.arm(side).isValid())
+
     def test_v017_outer_inner_shoulder_is_clearance_coupled(self):
         d=self.d
         profile=d.v015_inner_profile
