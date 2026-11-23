@@ -719,10 +719,17 @@ class Design:
         center=side*self.effective_arm_pitch_mm/2
         ymin=self.arm_front_y_mm+self.arm_top_land_mm
         yend=ymin+self.arm_front_rail_taper_depth_mm
-        z0=self.arm_front_z_mm+self.arm_front_neck_start_above_datum_mm
         h=self.front_neck_blend_height_mm
-        z1=self.path_point(self.mounting_stations_s_mm[1])[1]+self.compact_tab_half_height_mm+2
         zl=self.adaptive_profile['screw_z'][0]
+        nominal_z0=self.arm_front_z_mm+self.arm_front_neck_start_above_datum_mm
+        # Keep the blend below the lower driver envelope when the measured
+        # screw pitch moves that station down. The configured datum is the
+        # nominal upper limit; screw clearance controls the actual start.
+        z0=min(nominal_z0,
+               zl-h-self.board_driver_access_d_mm/2-1.25)
+        if z0<self.arm_front_z_mm-0.25:
+            raise ValueError('Lower screw pitch leaves no room for front-root blend')
+        z1=self.path_point(self.mounting_stations_s_mm[1])[1]+self.compact_tab_half_height_mm+2
         if not (h>1 and z0+h<zl-self.board_driver_access_d_mm/2-1):
             raise ValueError('Front root blend must terminate below lower M3 passage')
         if z1<=z0+h:
@@ -1072,7 +1079,7 @@ def waveshare_mount_datum_fixture(d):
 
 
 def render_waveshare_datum(d,output):
-    """Auditable plot of native STEP-hole datum vs unregistered V014 proposal."""
+    """Auditable plot of native STEP holes vs unregistered V017 pitch proposal."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -1090,9 +1097,9 @@ def render_waveshare_datum(d,output):
         ax.text(x+2,y+(3 if y>0 else -4),f'({x:g}, {y:g})',fontsize=8)
     ax.plot([],[],'o',color='#1d4ed8',label='Source STEP: four circled hole centers')
     ax.set_xlim(-112,112);ax.set_ylim(-47,47);ax.set_aspect('equal')
-    ax.set_title('Waveshare 0820-1 STEP / extracted four-hole datum — V014',weight='bold')
+    ax.set_title('Waveshare 0820-1 STEP / extracted four-hole datum — V017',weight='bold')
     ax.set_xlabel('Native STEP X / mm');ax.set_ylabel('Native STEP Y / mm')
-    ax.text(-103,-43,'Measured: X pitch 114, Y pitch 59.1 mm. Bracket config still 78 × 45; NOT FIT-CERTIFIED.',
+    ax.text(-103,-43,'Measured pitch matches candidate: 114 × 59.1 mm. Datum transform unregistered; NOT FIT-CERTIFIED.',
             fontsize=9,color='#991b1b')
     ax.grid(alpha=.18);fig.tight_layout()
     outpath=output/'waveshare_mount_datums.png'
