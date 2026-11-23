@@ -519,15 +519,18 @@ class Design:
                 wire=wire.threePointArc(s['mid'],s['exit'])
         return wire.close()
 
-    @property
-    def v015_inner_profile(self):
-        """Screw-dependent C-shaped opening nested within the exterior curve."""
+    def _nominal_inner_profile(self):
+        """Initial G1 opening derived from the outer profile and screw stations.
+
+        This is a construction seed, not the final clearance-controlled curve.
+        The coupled solver moves the whole opening towards the front as needed.
+        """
         p=self.adaptive_profile
         zm=(p['bottom_z']+p['top_z'])/2
         z0=self.rib_lower_spine_start_z
         z1=p['outer_bulge_z']
         if not z0<zm<z1:
-            raise ValueError('V015 opening nose must lie on lower rear spine')
+            raise ValueError('V017 opening nose must lie on lower rear spine')
         outer=self.v016_outer_controls
         exterior=outer['lower_y']+(zm-z0)/(z1-z0)*(
             outer['bulge_y']-outer['lower_y'])
@@ -535,10 +538,10 @@ class Design:
         upper=p['rear_top_y']
         lower=p['rear_bottom_y']
         if nose<=max(upper,lower)+self.v015_min_curve_bulge_mm:
-            raise ValueError('V015 insufficient rear spine for curved cavity')
+            raise ValueError('V017 insufficient rear spine for curved cavity')
         lift=(p['top_z']-p['bottom_z'])*self.v015_curve_vertical_tangent_fraction
         if not 0<lift<(p['top_z']-p['bottom_z'])/2:
-            raise ValueError('V015 invalid vertical tangency length')
+            raise ValueError('V017 invalid vertical tangency length')
         return dict(bottom_z=p['bottom_z'],top_z=p['top_z'],
                     middle_z=zm,nose_y=nose,exterior_nose_y=exterior,
                     rear_top_y=upper,rear_bottom_y=lower,
@@ -548,12 +551,11 @@ class Design:
                     lower_tangent_mm=min(self.v015_curve_horizontal_tangent_mm,
                                          (nose-lower)*.72),vertical_tangent_mm=lift)
 
-    def v015_inner_boundary_edges(self):
-        """Two cubic Bezier arcs, joined G1 at rear nose and tangent to ear lips."""
-        p=self.v015_inner_profile
+    def _inner_boundary_edges_for_profile(self,p):
+        """Construct the same five-edge open-front cutter from explicit controls."""
         entry=self.arm_front_y_mm-self.service_cutter_front_overshoot_mm
         if entry>=self.arm_front_y_mm-2*self.arm_opening_corner_radius_mm:
-            raise ValueError('V015 opening cutter front overlaps tab')
+            raise ValueError('V017 opening cutter front overlaps tab')
         lo,hi,mid=p['bottom_z'],p['top_z'],p['middle_z']
         lower,upper,nose=p['rear_bottom_y'],p['rear_top_y'],p['nose_y']
         d0,d1,lv=p['lower_tangent_mm'],p['upper_tangent_mm'],p['vertical_tangent_mm']
@@ -567,42 +569,105 @@ class Design:
             cq.Edge.makeLine(point(upper,hi),point(entry,hi)),
             cq.Edge.makeLine(point(entry,hi),point(entry,lo))]
 
-    def v016_minimum_curved_spine_distance_mm(self):
-        """Minimum planar (YZ) distance from curved aperture to true outer wire.
+    def _rear_outer_profile_edges(self):
+        """True filleted exterior BREP edges carrying the rear opening web.
 
-        Unlike the historical same-Z Y offset, this measures the actual
-        Euclidean shortest distance to the line/arc exterior. It catches
-        narrowing where the rear shoulder is strongly sloped.
+        Include both rear load-path segments and the fillets at the lower
+        transition, bulge and upper shoulder. Do not use the front boss wall
+        or unrelated saddle edges for the spine thickness measurement.
         """
-        inner_edges=self.v015_inner_boundary_edges()[1:3]
-        profile=self.v015_inner_profile
-        exterior=[]
-        for edge in self.rib_workplane().wire().val().Edges():
-            count=max(8,math.ceil(edge.Length()/0.5))
-            points=[edge.positionAt(i/count) for i in range(count+1)]
-            exterior.extend(zip(points[:-1],points[1:]))
-        minimum=float('inf')
-        for edge in inner_edges:
-            count=max(16,math.ceil(edge.Length()/0.35))
-            for i in range(count+1):
-                p=edge.positionAt(i/count)
-                for a,b in exterior:
-                    # Only the outside load-bearing spine, not the front seat,
-                    # is relevant to the web between curved contours.
-                    if max(a.y,b.y)<profile['rear_top_y']-4:
-                        continue
-                    if max(a.z,b.z)<profile['bottom_z']-8 or min(a.z,b.z)>profile['top_z']+8:
-                        continue
-                    dy=b.y-a.y; dz=b.z-a.z
-                    length_squared=dy*dy+dz*dz
-                    if length_squared<1e-12:
-                        continue
-                    t=max(0,min(1,((p.y-a.y)*dy+(p.z-a.z)*dz)/length_squared))
-                    distance=math.hypot(p.y-(a.y+t*dy),p.z-(a.z+t*dz))
-                    minimum=min(minimum,distance)
-        if not math.isfinite(minimum):
-            raise ValueError('Cannot measure real outer-to-inner side-profile web')
-        return minimum
+        sections=self.rib_profile_geometry()
+        def point(p):return cq.Vector(0,p[0],p[1])
+        edges=[]
+        for i in (3,4,5):
+            segment=sections[i]
+            if segment['mid'] is not None:
+                edges.append(cq.Edge.makeThreePointArc(
+                    point(segment['entry']),point(segment['mid']),
+                    point(segment['exit'])))
+            if i<5:
+                edges.append(cq.Edge.makeLine(
+                    point(segment['exit']),point(sections[i+1]['entry'])))
+        return edges
+
+    def v016_minimum_curved_spine_distance_mm(self,inner_edges=None):
+        """Exact 3D OCC minimum distance for coplanar YZ inner/outer curves.
+
+        At a smooth closest pair this is normal to both curves, avoiding the
+        false assurance of a same-Z or horizontal Y offset. The original
+        function name remains for compatibility with validation/report code.
+        """
+        from OCP.BRepExtrema import BRepExtrema_DistShapeShape
+        if inner_edges is None:
+            inner_edges=self.v015_inner_boundary_edges()
+        inner=cq.Compound.makeCompound(inner_edges[1:3])
+        outer=cq.Compound.makeCompound(self._rear_outer_profile_edges())
+        distance=BRepExtrema_DistShapeShape(inner.wrapped,outer.wrapped)
+        distance.Perform()
+        if not distance.IsDone():
+            raise ValueError('V017 could not measure actual shoulder-to-opening thickness')
+        value=float(distance.Value())
+        if not math.isfinite(value):
+            raise ValueError('V017 nonfinite structural web thickness')
+        return value
+
+    @property
+    def v015_inner_profile(self):
+        """Couple the curved cavity to the *actual filleted exterior*.
+
+        Shift all three Y controls together until their OCC minimum-distance
+        clearance is at least the configured target. This preserves the G1
+        tangencies and upper/lower tab Z datums. It is a minimum-clearance
+        solution, not a claim that the curves are globally parallel offsets.
+        """
+        p=self._nominal_inner_profile()
+        target=float(self.structural_spine_target_wall_mm)
+        if not math.isfinite(target) or target<=0:
+            raise ValueError('structural_spine_target_wall_mm must be positive and finite')
+        target=max(target,self.v016_outer_inner_min_euclidean_web_mm)
+        def shifted(delta):
+            q=dict(p)
+            for key in ('rear_top_y','rear_bottom_y','nose_y'):
+                q[key]-=delta
+            q['web_at_nose_mm']=q['exterior_nose_y']-q['nose_y']
+            q['coupled_frontward_adjustment_mm']=delta
+            return q
+        def clearance(delta):
+            return self.v016_minimum_curved_spine_distance_mm(
+                self._inner_boundary_edges_for_profile(shifted(delta)))
+        original=clearance(0)
+        if original+1e-5>=target:
+            p['coupled_frontward_adjustment_mm']=0.0
+            p['minimum_actual_planar_web_mm']=original
+            return p
+        front_limit=self.arm_front_y_mm+self.mount_pad_axial_thickness_mm+0.5
+        maximum=min(p['rear_top_y'],p['rear_bottom_y'],p['nose_y'])-front_limit
+        if maximum<=0:
+            raise ValueError('V017 opening has no frontward adjustment clearance')
+        upper=min(maximum,1.0)
+        measured=clearance(upper)
+        while measured<target-1e-5 and upper<maximum-1e-9:
+            upper=min(maximum,upper*2)
+            measured=clearance(upper)
+        if measured<target-1e-5:
+            raise ValueError(
+                f'V017 target spine web {target:.3f} mm infeasible: '
+                f'maximum achieved {measured:.3f} mm before front seat clearance')
+        lower=0.0
+        for _ in range(20):
+            middle=(lower+upper)/2
+            if clearance(middle)>=target:
+                upper=middle
+            else:
+                lower=middle
+        result=shifted(upper+min(0.0001,max(0.0,maximum-upper)))
+        result['minimum_actual_planar_web_mm']=clearance(
+            result['coupled_frontward_adjustment_mm'])
+        return result
+
+    def v015_inner_boundary_edges(self):
+        """G1 joined curved opening, positioned by true exterior web clearance."""
+        return self._inner_boundary_edges_for_profile(self.v015_inner_profile)
 
     def arm_service_opening(self,side):
         """V015: single curved front-open recess, not a box plus capsule."""
@@ -630,8 +695,10 @@ class Design:
         if min_web<self.v015_min_sampled_rear_web_mm:
             raise ValueError(f'V015 curvature intrudes on rear spine: {min_web:.2f} mm')
         minimum=self.v016_minimum_curved_spine_distance_mm()
-        if minimum<self.v016_outer_inner_min_euclidean_web_mm:
-            raise ValueError(f'V016 true planar spine web too thin: {minimum:.3f} mm')
+        required=max(self.v016_outer_inner_min_euclidean_web_mm,
+                     self.structural_spine_target_wall_mm)
+        if minimum+0.0001<required:
+            raise ValueError(f'V017 true planar spine web {minimum:.3f} mm below target {required:.3f} mm')
         wire=cq.Wire.assembleEdges(edges)
         cutter=cq.Solid.extrudeLinear(wire,[],cq.Vector(self.arm_thickness_mm+2,0,0))
         return check_solid('v015_curved_g1_front_opening',
