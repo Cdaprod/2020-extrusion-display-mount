@@ -114,7 +114,7 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(es[1].geomType(),'BEZIER')
         self.assertEqual(es[2].geomType(),'BEZIER')
         self.assertLess((es[1].endPoint()-es[2].startPoint()).Length,0.00001)
-        self.assertAlmostEqual(p['web_at_nose_mm'],9)
+        self.assertGreaterEqual(p['web_at_nose_mm'],9)
         self.assertGreater(p['nose_y'],p['rear_bottom_y'])
         shifted=dict(self.cfg)
         shifted['board_screw_station_center_mm']+=2
@@ -316,6 +316,35 @@ class ModelTests(unittest.TestCase):
         # Nominal geometry is still the accepted state after the temporary edit.
         nominal=Design(self.cfg).integrated_support()
         self.assertTrue(nominal.isValid())
+
+    def test_v017_outer_inner_shoulder_is_clearance_coupled(self):
+        d=self.d
+        profile=d.v015_inner_profile
+        self.assertAlmostEqual(d.structural_spine_target_wall_mm,5.0)
+        measured=d.v016_minimum_curved_spine_distance_mm()
+        self.assertGreaterEqual(measured+0.0001,d.structural_spine_target_wall_mm)
+        self.assertAlmostEqual(profile['minimum_actual_planar_web_mm'],measured,places=3)
+        self.assertGreaterEqual(profile['coupled_frontward_adjustment_mm'],0)
+        nominal=d._nominal_inner_profile()
+        # Exactly the same vertical opening limits and G1 tangent lengths.
+        for key in ('bottom_z','top_z','middle_z','upper_tangent_mm',
+                    'lower_tangent_mm','vertical_tangent_mm'):
+            self.assertAlmostEqual(profile[key],nominal[key])
+        # Coupled solver moves the whole inner curve without stretching tabs.
+        adjustment=profile['coupled_frontward_adjustment_mm']
+        for key in ('rear_top_y','rear_bottom_y','nose_y'):
+            self.assertAlmostEqual(profile[key],nominal[key]-adjustment,places=4)
+        self.assertTrue(d.arm(-1).isValid())
+        self.assertTrue(d.arm(1).isValid())
+
+    def test_v017_shoulder_clearance_rejects_unachievable_target(self):
+        changed=dict(self.cfg)
+        changed['structural_spine_target_wall_mm']=500
+        with self.assertRaisesRegex(ValueError,'target spine web|target.*infeasible'):
+            _=Design(changed).v015_inner_profile
+        changed['structural_spine_target_wall_mm']=-1
+        with self.assertRaisesRegex(ValueError,'positive and finite'):
+            _=Design(changed).v015_inner_profile
 
     def test_v016_rejects_unphysical_profile_offset(self):
         for field,value in [('v016_inner_lip_y_web_mm',6),
