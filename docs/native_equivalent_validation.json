@@ -1,0 +1,31 @@
+{
+  "status": "PASS: native-equivalent CadQuery solids",
+  "main_volume_mm3": 185449.77935625488,
+  "keeper_volume_mm3": 33585.19849258885,
+  "main_solids": 1,
+  "keeper_solids": 1,
+  "keeper_overlap_mm3": 0.0,
+  "screw_pitch_x_mm": 114.0,
+  "screw_pitch_z_mm": 59.1,
+  "channel_width_mm": 20.15,
+  "key_width_mm": 5.8,
+  "reopened_native_pitch_checks": {
+    "horizontal_mm": [
+      104,
+      114,
+      124
+    ],
+    "vertical_mm": [
+      53,
+      59.1,
+      65
+    ],
+    "main_valid_single_solid": true,
+    "keeper_valid_single_solid": true,
+    "bidirectional_boolean_difference_mm3": 0.0,
+    "max_step_volume_difference_mm3": 0.002
+  },
+  "bracket_key_shoulder_mm": 7.175,
+  "saddle_key_shoulder_mm": 7.45,
+  "physical_fit_and_strength": "Not verified"
+}

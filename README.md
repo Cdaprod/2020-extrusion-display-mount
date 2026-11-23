@@ -1,5 +1,15 @@
 # 2020 Extrusion Display Mount
 
+## Current editable FreeCAD model and matching Python build
+
+The current native source is [display-mount-working.FCStd](cad/freecad/display-mount-working.FCStd). The separately printable keeper and fused mount have matching native STEP/STL exports in `cad/freecad/`. The independent CadQuery implementation of this angular native geometry is run with `python src/build.py --native-equivalent`; its STEP/STL and previews use `native_equivalent` filenames. The default generator retains the earlier curved design and is not geometrically identical. Both remain editable; there is no automatic parameter synchronization between the FreeCAD spreadsheet and JSON.
+
+![Current mount and separate keeper](previews/native_equivalent_isometric.png)
+
+The 5.80 mm key is centered: the 20.15 mm bracket opening has 7.175 mm shoulders and the 20.70 mm saddle opening has 7.45 mm shoulders. `cad/freecad/original-side.png` is an archived, superseded reference. The current model preserves the 15 mm access pocket and 1.70 mm effective keeper relief. Nominal pitch is 114 × 59.1 mm. The reopened native model recomputed as a valid single main solid at X pitches 104, 114 and 124 mm and Z pitches 53, 59.1 and 65 mm; independent generated and native STEP shapes had zero measured bidirectional Boolean difference at those six cases (volume difference < 0.002 mm³). The keeper is a separate valid solid.
+
+Print fit, clamping force, strength and actual hardware clearances require physical verification. The rear cross member and opening may require supports depending on print orientation.
+
 ## V017 — dimensional authority for shared mounting tabs
 
 **No new FreeCAD sketches are required.** The four M3 screw stations now drive the side-profile solver as well as the mounting-ear envelopes, paired arm spacing, and keyed saddle span. The exterior rear root remains anchored to the extrusion saddle, while its lower corner, bulge, and upper shoulder Y positions are calculated as dimensionless functions of vertical screw pitch. The rear-bulge elevation follows the vertical fastener midpoint and pitch; neither upper nor lower inner-curve entry is an independently fixed Y coordinate. Both entry points are inset from their corresponding outer support sections by a configurable required web.

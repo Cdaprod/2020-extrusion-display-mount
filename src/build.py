@@ -1398,7 +1398,13 @@ def main():
     p.add_argument('--rail',type=Path,default=DEFAULT_RAIL)
     p.add_argument('--out',type=Path,default=ROOT)
     p.add_argument('--no-previews',action='store_true')
+    p.add_argument('--native-equivalent',action='store_true',
+                   help='generate the native FreeCAD profile independently with CadQuery')
     args=p.parse_args()
-    build(args.config,args.out,args.rail,not args.no_previews)
+    if args.native_equivalent:
+        from native_equivalent import build_native
+        build_native(args.config,args.out,not args.no_previews)
+    else:
+        build(args.config,args.out,args.rail,not args.no_previews)
 
 if __name__=='__main__':main()
