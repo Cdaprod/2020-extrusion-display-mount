@@ -31,3 +31,11 @@ The native YZ sketch uses `BracketChannelWidth = 20.15 mm`, centered on `RailCen
 The working document exposes linked, individually selectable right bracket, left bracket, saddle and upper crossbar under `Separate component references - joints pending`. These are parametric selections of the existing fused design in their assembly positions; the original main fusion and separate keeper are preserved. They are valid individual solids at 104, 114 and 124 mm horizontal pitch and 53, 59.1 and 65 mm vertical pitch.
 
 These selections are not yet a bolt-together design: at nominal pitch each bracket overlaps the saddle by about 6330.67 mm³ and the upper crossbar by 800 mm³. The requested 1–2 mm locating sockets, underside fasteners and anti-rotation features still need to be designed and checked against the extrusion channel and existing keeper screws. Do not print these reference solids as an assembled kit.
+
+## Modular assembly with locating joints
+
+`Modular assembly (prototype joints)` contains separate left and right brackets, a saddle with the original fused lower foot and key geometry, and an upper crossbar. `Modular joint dimensions` provides a 1.5 mm locating depth and 0.2 mm lateral clearance. Each bracket has an 8 mm long keyed tongue and a 2.5 mm M3 pilot at its saddle joint; the saddle has corresponding 3.4 mm clearance bores and 6 mm × 3 mm underside counterbores. Install these two saddle-to-bracket screws before fitting the separate keeper: the keeper covers their heads.
+
+The 8 × 10 mm rectangular crossbar engages each bracket socket by 1.5 mm, with a 0.2 mm socket clearance, side entry clearance holes and recessed heads and 2.5 mm pilots in the bar. Its length is `ScrewPitchX - TabWidth + 2 * SocketDepth`: 107 mm at 114 mm pitch. Each component was a valid single solid with zero pairwise interference at X pitches 104, 114 and 124 mm and Z pitches 53, 59.1 and 65 mm. Fused and modular designs are separate alternatives in the same document.
+
+Dimensions are prototype values. Screw lengths, actual plastic-thread engagement, clearance, clamping and resistance to loads and rotation require physical fit and load testing; no certification is implied. The earlier `Separate component references` group remains as reference geometry and is not the assembled modular design.
