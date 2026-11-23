@@ -542,10 +542,10 @@
       "saddle_bridge_thickness_mm": 6.0,
       "clamp_hole_x_mm": 38.0,
       "clamp_hole_y_offset_mm": 15.4,
-      "insert_diameter_mm": 5.5,
+      "insert_diameter_mm": 2.5,
       "insert_depth_mm": 7.0,
       "keeper_thickness_mm": 6.0,
-      "keeper_bolt_diameter_mm": 4.5,
+      "keeper_bolt_diameter_mm": 3.4,
       "keeper_gap_mm": 0.45,
       "keeper_foot_clearance_mm": 0.3,
       "keeper_foot_relief_mm": 1.7,
@@ -553,7 +553,11 @@
       "front_bore_length_mm": 90.0,
       "rear_bore_diameter_mm": 5.5,
       "rear_bore_start_y_mm": 4.0,
-      "rear_bore_length_mm": 15.0
+      "rear_bore_length_mm": 15.0,
+      "keeper_head_diameter_mm": 6.0,
+      "keeper_head_depth_mm": 3.0,
+      "display_head_diameter_mm": 5.0,
+      "display_bearing_thickness_mm": 3.0
     }
   }
 }
