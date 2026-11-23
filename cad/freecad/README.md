@@ -25,3 +25,9 @@ The default Python generator retains a different curved arm profile and coordina
 ## Centered bracket channel
 
 The native YZ sketch uses `BracketChannelWidth = 20.15 mm`, centered on `RailCenterY = 10 mm`. The 5.8 mm slot key is centered on that datum, leaving 7.175 mm on each side of the bracket channel. The saddle's separate channel remains 20.70 mm wide and centered on the same datum, giving 7.45 mm on each side of the key. Coincidence plus horizontal and vertical constraints replace duplicate ordinate dimensions. The main `MountPrintable` fusion remains one solid; `RemovableKeeper` remains a separate body and export. Native recomputes at 53, 59.1 and 65 mm pitch remained valid, and the reference rail and keeper had zero overlap at nominal pitch.
+
+## Separate component references — joints pending
+
+The working document exposes linked, individually selectable right bracket, left bracket, saddle and upper crossbar under `Separate component references - joints pending`. These are parametric selections of the existing fused design in their assembly positions; the original main fusion and separate keeper are preserved. They are valid individual solids at 104, 114 and 124 mm horizontal pitch and 53, 59.1 and 65 mm vertical pitch.
+
+These selections are not yet a bolt-together design: at nominal pitch each bracket overlaps the saddle by about 6330.67 mm³ and the upper crossbar by 800 mm³. The requested 1–2 mm locating sockets, underside fasteners and anti-rotation features still need to be designed and checked against the extrusion channel and existing keeper screws. Do not print these reference solids as an assembled kit.
