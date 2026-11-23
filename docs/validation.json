@@ -111,7 +111,7 @@
       "lower_tangent_mm": 3.032419169329071,
       "vertical_tangent_mm": 10.583999999999998,
       "coupled_frontward_adjustment_mm": 4.449478967285156,
-      "minimum_actual_planar_web_mm": 5.0000410202929615
+      "minimum_actual_planar_web_mm": 5.000041020292976
     },
     "inner_rear_lip_offset_mm": 8.85,
     "minimum_actual_planar_web_mm": 5.0,
@@ -221,7 +221,7 @@
       "lower_tangent_mm": 3.032419169329071,
       "vertical_tangent_mm": 10.583999999999998,
       "coupled_frontward_adjustment_mm": 4.449478967285156,
-      "minimum_actual_planar_web_mm": 5.0000410202929615
+      "minimum_actual_planar_web_mm": 5.000041020292976
     },
     "min_sampled_rear_web_mm": 7.5,
     "m3_mounting_tabs_total": 4,
