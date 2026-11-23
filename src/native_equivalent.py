@@ -55,7 +55,8 @@ def geometry(cfg):
         for z in (-upper,upper):
             # Native uses a 3 mm front bore and 5.5 mm rear access bore.
             drill=cyl(n['front_bore_diameter_mm']/2,n['front_bore_length_mm'],(x,0,z),(0,1,0)).fuse(cyl(n['rear_bore_diameter_mm']/2,n['rear_bore_length_mm'],(x,n['rear_bore_start_y_mm'],z),(0,1,0)))
-            arm=arm.cut(drill)
+            cone=cq.Solid.makeCone(n['front_bore_diameter_mm']/2,n['display_head_diameter_mm']/2,1,cq.Vector(x,n['display_bearing_thickness_mm'],z),cq.Vector(0,1,0))
+            arm=arm.cut(drill.fuse(cone))
         arms.append(arm)
     margin=n['saddle_end_margin_mm']; span=x_pitch+width+2*margin; x0=-span/2
     sw=n['saddle_width_mm']; clearance=n['rail_side_clearance_mm']; rail_low=center-10-clearance;rail_high=center+10+clearance
@@ -71,7 +72,9 @@ def geometry(cfg):
     main=require_one('native main',arms[0].fuse(arms[1],saddle,rear).clean())
     thick=n['keeper_thickness_mm']; top_z=z0-n['keeper_gap_mm']; keeper=box(x0,center-sw/2,top_z-thick,span,sw,thick)
     for x in (-hx,hx):
-        for y in (center-hy,center+hy):keeper=keeper.cut(cyl(n['keeper_bolt_diameter_mm']/2,thick,(x,y,top_z-thick)))
+        for y in (center-hy,center+hy):
+            keeper=keeper.cut(cyl(n['keeper_bolt_diameter_mm']/2,thick,(x,y,top_z-thick)))
+            keeper=keeper.cut(cyl(n['keeper_head_diameter_mm']/2,n['keeper_head_depth_mm'],(x,y,top_z-thick)))
     edge=n['keeper_foot_clearance_mm'];depth=n['keeper_foot_relief_mm']
     for x in (-x_pitch/2-width/2-edge,x_pitch/2-width/2-edge):
         for y0,y1 in ((center-sw/2,left+edge),(right-edge,center+sw/2)):

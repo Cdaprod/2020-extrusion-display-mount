@@ -1,5 +1,9 @@
 # 2020 Extrusion Display Mount
 
+## M3 fasteners (current native-equivalent model)
+
+Display tabs have a 3 mm axial bearing pad, Ø3 mm through hole and Ø5 mm, 90° countersunk seat accessed from the rear. The removable keeper has Ø3.4 mm screw clearances and Ø6 × 3 mm deep head counterbores on its underside; four Ø2.5 mm × 7 mm pilot pockets in the saddle accept M3 screws threaded directly into printed plastic. The keeper remains separate. The 2.5 mm pilot and 6 × 3 mm head recess are provisional: check them against the actual screw heads, print process and material with a test print; engagement length and clamping force have not been established. The hardware changes apply to the FreeCAD/native-equivalent model; the retained legacy curved generator and its M4 reference assets are separate.
+
 ## Current editable FreeCAD model and matching Python build
 
 The current native source is [display-mount-working.FCStd](cad/freecad/display-mount-working.FCStd). The separately printable keeper and fused mount have matching native STEP/STL exports in `cad/freecad/`. The independent CadQuery implementation of this angular native geometry is run with `python src/build.py --native-equivalent`; its STEP/STL and previews use `native_equivalent` filenames. The default generator retains the earlier curved design and is not geometrically identical. Both remain editable; there is no automatic parameter synchronization between the FreeCAD spreadsheet and JSON.

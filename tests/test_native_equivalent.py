@@ -28,8 +28,18 @@ class NativeEquivalentTests(unittest.TestCase):
         self.assertLess(self.main.intersect(self.keeper).Volume(),1e-6)
         for x in (-38,38):
             for y in (-5.4,25.4):
-                probe=cyl(2.2,14.8,(x,y,n['foot_base_z_mm']-n['keeper_gap_mm']-n['keeper_thickness_mm']-.001))
+                probe=cyl(1.2,14.8,(x,y,n['foot_base_z_mm']-n['keeper_gap_mm']-n['keeper_thickness_mm']-.001))
                 self.assertLess(self.main.intersect(probe).Volume()+self.keeper.intersect(probe).Volume(),1e-5)
+
+    def test_m3_seats_and_clamp_fasteners(self):
+        # Probe the rear countersink at two depths: it narrows toward the
+        # display, leaving the 3 mm axial bearing pad intact.
+        x,z=57,29.55
+        self.assertLess(self.main.intersect(cyl(.05,.08,(x+2.25,3.85,z),(0,1,0))).Volume(),1e-7)
+        self.assertGreater(self.main.intersect(cyl(.05,.08,(x+2.25,3.05,z),(0,1,0))).Volume(),1e-5)
+        n=self.cfg['native_profile']; top=n['foot_base_z_mm']-n['keeper_gap_mm']; bottom=top-n['keeper_thickness_mm']
+        self.assertLess(self.keeper.intersect(cyl(2.9,2.9,(38,-5.4,bottom))).Volume(),1e-6)
+        self.assertGreater(self.keeper.intersect(cyl(.1,.2,(40.5,-5.4,bottom+3.1))).Volume(),1e-5)
 
     def test_pitch_variants_keep_screw_access_and_one_solid(self):
         for pitch in (53,59.1,65):
