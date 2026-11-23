@@ -7,3 +7,15 @@ The Assembly contains a Body whose active tip is `Pocket001`: the YZ Sketch (28 
 At import, Pocket001 contains two valid disconnected solids with combined bounds X −62…62, Y −13…68, Z −88.2789…44.05 mm. It does not yet include the connecting saddle or keeper.
 
 ![Preserved bracket side view](original-side.png)
+
+## Connected working model
+
+`display-mount-working.FCStd` preserves the original bracket Body and adds editable saddle and rear cross-member features, insert pockets, a separate keeper and a final `MountPrintable` fusion. The cross member follows the upper rear web and is flush with the outside arm faces. The original 6 mm notch key conflicted with the supplied rail STEP; the working model narrows it to 5.8 mm about the rail center. The original file remains unchanged.
+
+The keeper is 138 × 42 × 6 mm, spans the saddle, and has four 4.5 mm clearance holes aligned to 5.5 mm insert pockets. Shallow reliefs under the bracket feet allow the modeled keeper to reach the rail before bearing on the feet. Its initial gap to the reference rail is 0.30 mm. Four 4.4 mm bolt-path probes were unobstructed; a 0.31 mm keeper translation reaches the rail without colliding with the mount. These geometric checks do not establish actual clamping force or hardware fit.
+
+At 53, 59.1 and 65 mm vertical pitch the native fused mount and separate keeper were valid single solids; modeled rail and keeper overlap were zero. The nominal main bounds are 138 × 81 × 132.33 mm, within the configured Neptune 2 base profile's 235 × 235 × 250 mm build volume. This is a bounding-box check only. The upper cross member and arm interiors may require supports depending on orientation; no slicer analysis has been performed.
+
+The Python generator retains a different curved arm profile and coordinate system. Its lower root-relief and front-neck blend previously rejected 65 mm pitch. A working source change shortens those transitions as the lower screw descends; this does not yet make the generated geometry identical to the native model. STEP and STL files marked `working` are CAD review exports; the keeper remains a separate part.
+
+![Connected working mount](mount-working-isometric.png)
