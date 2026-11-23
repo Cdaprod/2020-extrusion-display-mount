@@ -6,7 +6,7 @@
 
 **V017 upper-shoulder reinforcement:** `config/mount_spec.json` now contains `structural_spine_target_wall_mm: 5.0`. The generated inner U opening is coupled to the *actual filleted outer shoulder* using OpenCascade's minimum-distance calculation. When the minimum clearance is too small, the solver moves the two joined Bézier segments together toward the front without changing the upper/lower screw-tab elevations or the opening's G1 tangents. If the target cannot be reached without encroaching on the front bearing seat, generation fails with an explicit dimension error. The nominal 5 mm value is an initial geometric constraint, **not** a validated print-strength rating. Inspection/physical testing remains required. This is a minimum-clearance solver, not a mathematically exact constant-thickness offset curve.
 
-The existing G1-tangent Bézier opening is retained and now uses the same derived outer controls as the exterior spine. All four M3 counterbores, integral ears and longitudinal rear screwdriver corridors are preserved. **The measured Waveshare Ø2, 114 × 59.1 mm mounting pattern remains unregistered** to the provisional bracket's M3 78 × 45 mm pattern: manufacturing fit is not certified.
+The existing G1-tangent Bézier opening is retained and now uses the same derived outer controls as the exterior spine. All four M3 counterbores, integral ears and longitudinal rear screwdriver corridors are preserved. **The bracket screw pattern now uses the measured Waveshare STEP pitches: 114 × 59.1 mm, centered at X=±57 and Z=±29.55 mm.** Source Ø2 holes, datum transform and fit against the assembled bracket remain unverified; manufacturing fit is not certified.
 
 The generator exposes one shared local tab definition and translates it to each screw center on both arms. The actual front bearing pads now consume those same records as the YZ opening lips, so changing horizontal or vertical screw pitch relocates the screw features and tabs together without stretching either tab. The lower-root relief and rear gusset remain separate structural geometry. The build validates connected solids after pitch changes and restores the nominal configuration before exporting. The FreeCAD review document remains a separate native dependency graph and is not represented as validated by this generator.
 
@@ -44,7 +44,7 @@ The generated **side view is a plot of the actual main BREP silhouette**, not a 
 
 [Full V015 profile construction and validation requirements](docs/V015_CURVED_SIDE_PROFILE.md).
 
-**Fit remains provisional:** The Waveshare reference STEP has Ø2 holes with 114 × 59.1 mm measured pitch. V015 retains the nominal 78 × 45 mm M3 pattern and cannot be treated as a verified hardware fit.
+**Fit remains provisional:** The Waveshare reference STEP has Ø2 holes with 114 × 59.1 mm measured pitch. the current bracket pitch is 114 × 59.1 mm; the native STEP holes are Ø2 while the candidate bracket bores suit M3, so this is not a verified hardware fit.
 
 
 ## V014 — compact independently constrained M3 mounting ears
@@ -59,7 +59,7 @@ Each structural arm has two **short independent screw-mounting ears**, rather th
 
 [Full V014 design and parameter dependency specification](docs/V014_FASTENER_DRIVEN_COMPACT_TABS.md)
 
-**Hardware caveat:** The actual Waveshare STEP shows Ø2 holes at 114 × 59.1 mm; nominal candidate M3 screws at 78 × 45 mm are not certified for direct mounting. No forced match or inferred threaded hardware.
+**Hardware caveat:** The actual Waveshare STEP shows Ø2 holes at 114 × 59.1 mm; the current bracket uses the measured 114 × 59.1 mm pitch, but its candidate M3 bores are not certified for direct mounting to Ø2 STEP holes. No forced match or inferred threaded hardware.
 
 ## Archived design history — V013 and earlier
 
@@ -73,7 +73,7 @@ The mounting arms now have **deeper, taller R6 service reliefs**: the nominal ce
 
 The interior rear slope now has a separately parameterized **8 mm minimum nominal Y-direction web at both opening ends**. Both 3D rear-entry Ø7 tool passages extend through the outside of their own arm and beyond its measured bounding box (no accidental blind tunnels). The screw-head seats remain separate Ø6.4 counterbores with 3.2 mm nominal axial bearing floors, and only Ø3.4 shank bores enter the board-facing surface. Changing the screw pitch or position still drives the opening extents.
 
-**Fit limitation:** the actual Waveshare source STEP four-pad pitch is 114 × 59.1 mm (Ø2 holes), whereas this existing bracket remains a provisional 78 × 45 mm M3 model. This structural design change does not certify the physical monitor fit.
+**Fit limitation:** the actual Waveshare source STEP four-pad pitch is 114 × 59.1 mm (Ø2 holes), whereas this bracket now uses the measured 114 × 59.1 mm screw pitch with candidate M3 bores. This structural design change does not certify the physical monitor fit.
 
 ![V013 main frame, generated BREP](previews/main_frame_only.png)
 
@@ -100,7 +100,7 @@ The V011 opening was made by fusing a rounded quadrilateral pocket to an additio
 
 **Waveshare reference from uploaded `0820-1.stp`:** BREP cylinder centers at X=-68.9/+45.1 and native Y=-29.9/+29.2 mm. The four circled mounting holes have Ø2.0 cylindrical surfaces and coaxial Ø5.5 cylindrical boss surfaces. Native center pitches are 114.0 × 59.1 mm, offset X=-11.9 mm from the source bounding-box center. See [exact datum manifest](reference/waveshare_0820_1_mounting_datums.json), [fit-status documentation](docs/V012_WAVESHARE_FIT_AND_PROFILE.md), and [Waveshare hole-pattern STEP fixture](step/WAVESHARE_0820_DATUM_FIXTURE.step).
 
-**Critical physical-fit gate:** The published bracket's existing screw pattern remains **78 × 45 mm** and the canonical 2020 rail remains **120 mm long**. Its nominal display plane is also narrower than the STEP source's 208 mm X span. These are unresolved dimensional incompatibilities, not merely fillet errors. The reference model is supplied as a *non-printable datum fixture*, not silently adapted into a bracket. Hardware-registration mode fails closed pending an approved XZ orientation, rail-length/mount load path, boss engagement and connector clearances.
+**Critical physical-fit gate:** the bracket screw pattern now uses **114 × 59.1 mm**, centered at X=±57 and Z=±29.55 mm. The STEP source holes are Ø2 while the candidate bracket hardware is M3, its source X datum is offset, and the source display width is 208 mm. Assembly registration and physical fit remain unverified. The canonical 2020 rail remains **120 mm long**. These are unresolved dimensional incompatibilities, not merely fillet errors. The reference model is supplied as a *non-printable datum fixture*, not silently adapted into a bracket. Hardware-registration mode fails closed pending an approved XZ orientation, rail-length/mount load path, boss engagement and connector clearances.
 
 ![Source STEP pad datum, independently identified](previews/waveshare_mount_datums.png)
 
@@ -161,7 +161,7 @@ The front-opening cutter is unified for each arm; SD and USB service corridors a
 
 | Config key | Default | Purpose |
 |---|---:|---|
-| `support_arm_center_spacing_mm` | 78 mm | Symmetric arm X pitch |
+| `support_arm_center_spacing_mm` | 114 mm | Symmetric arm X pitch |
 | `arm_thickness_mm` | 16 mm | Full structural arm width |
 | `arm_front_rail_side_trim_mm` | 2 mm per side | Tapered front M3 neck to 12 mm |
 | `arm_front_rail_taper_depth_mm` | 8.5 mm | Smooth draft back into 16 mm web |
@@ -170,9 +170,9 @@ The front-opening cutter is unified for each arm; SD and USB service corridors a
 | `arm_front_foot_fillet_mm` | 2 mm | Tangent arc at front/base junction |
 | `arm_toe_radius_mm` | 1.5 mm | Curved lower nose |
 | `keeper_corner_fillet_mm` | 1 mm | Exterior keeper vertical-edge rounds |
-| `mount_hole_center_spacing_mm` | 78 mm | M3 hole X pitch; constrained to arm material |
+| `mount_hole_center_spacing_mm` | 114 mm | M3 hole X pitch; constrained to arm material |
 | `board_screw_station_center_mm` | 42.5 mm | Vertical fastener midpoint, S datum |
-| `board_screw_vertical_pitch_mm` | 45 mm | Two M3 Z stations per arm |
+| `board_screw_vertical_pitch_mm` | 59.1 mm | Two M3 Z stations per arm |
 | `board_screw_clearance_d_mm` | 3.4 mm | M3 through-hole |
 | `board_screw_head_access_d_mm` | 6.4 mm | Internal head seat diameter |
 | `board_driver_access_d_mm` | 7.0 mm | Continuous rear insertion corridor |

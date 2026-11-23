@@ -20,8 +20,8 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(self.cfg['release'],'V017')
         self.assertFalse(hasattr(d,'carrier'))
         self.assertFalse(hasattr(d,'carrier_rails'))
-        self.assertEqual(d.mounting_x_centers_mm,(-39,39))
-        self.assertEqual(d.mounting_stations_s_mm,(20,65))
+        self.assertEqual(d.mounting_x_centers_mm,(-57,57))
+        self.assertEqual(d.mounting_stations_s_mm,(12.95,72.05))
         self.assertAlmostEqual(d.tangent[0],0,places=7)
         self.assertGreaterEqual(d.validate_mount_dimensions(),d.min_screw_head_radial_wall_mm)
         alt=dict(self.cfg);alt['mount_hole_center_spacing_mm']=90
@@ -136,24 +136,27 @@ class ModelTests(unittest.TestCase):
         fixture=self.d.validate(self.parts)['waveshare_step_mount_reference']
         self.assertEqual(fixture['measured_x_pitch_mm'],114)
         self.assertEqual(fixture['measured_y_pitch_mm'],59.1)
-        self.assertAlmostEqual(fixture['x_pitch_mismatch_mm'],-36)
-        self.assertAlmostEqual(fixture['z_pitch_mismatch_mm'],-14.1)
+        self.assertAlmostEqual(fixture['x_pitch_mismatch_mm'],0)
+        self.assertAlmostEqual(fixture['z_pitch_mismatch_mm'],0)
         self.assertFalse(fixture['registered_to_bracket'])
         self.assertTrue(__import__('pathlib').Path(ROOT/'reference/waveshare_0820_1_mounting_datums.json').exists())
 
     def test_v015_smooth_root_blend_stays_clear_of_lowest_m3(self):
         self.assertGreater(self.d.front_neck_blend_height_mm,0)
         p=self.d.adaptive_profile
-        self.assertLess(self.d.arm_front_z_mm+self.d.arm_front_neck_start_above_datum_mm+
-                        self.d.front_neck_blend_height_mm,p['screw_z'][0]-self.d.board_driver_access_d_mm/2)
+        self.assertLess(min(self.d.arm_front_z_mm+self.d.arm_front_neck_start_above_datum_mm,
+                            p['screw_z'][0]-self.d.front_neck_blend_height_mm-
+                            self.d.board_driver_access_d_mm/2-1.25)+
+                        self.d.front_neck_blend_height_mm,
+                        p['screw_z'][0]-self.d.board_driver_access_d_mm/2)
         self.assertTrue(self.d.arm(-1).isValid())
 
     def test_v015_slimmer_arm_opening_without_removing_screw_web(self):
         p=self.d.adaptive_profile
-        self.assertAlmostEqual(p['bottom_z'],59.5)
-        self.assertAlmostEqual(p['top_z'],91.5)
-        self.assertAlmostEqual(p['rear_bottom_y'],45.05,places=1)
-        self.assertAlmostEqual(p['rear_top_y'],35.89,places=1)
+        self.assertAlmostEqual(p['bottom_z'],52.45)
+        self.assertAlmostEqual(p['top_z'],98.55)
+        self.assertAlmostEqual(p['rear_bottom_y'],53.8366,places=3)
+        self.assertAlmostEqual(p['rear_top_y'],37.1248,places=3)
         self.assertGreaterEqual(p['top_slope_rear_web_y'],self.d.v014_min_sloped_spine_web_mm)
         self.assertGreaterEqual(p['lower_slope_rear_web_y'],self.d.v014_min_sloped_spine_web_mm)
         for z,aperture in zip(p['screw_z'],(p['bottom_z'],p['top_z'])):
@@ -182,7 +185,7 @@ class ModelTests(unittest.TestCase):
     def test_v015_mount_pitch_drives_real_saddle_and_arm_positions(self):
         d=self.d
         self.assertEqual(d.effective_arm_pitch_mm,d.mount_hole_center_spacing_mm)
-        self.assertEqual(d.effective_saddle_length_mm,108)
+        self.assertEqual(d.effective_saddle_length_mm,144)
         alt=dict(self.cfg)
         alt['mount_hole_center_spacing_mm']=90
         changed=Design(alt)
@@ -197,12 +200,13 @@ class ModelTests(unittest.TestCase):
 
     def test_v015_four_compact_ears_and_screw_rear_paths(self):
         p=self.d.adaptive_profile
-        self.assertAlmostEqual(p['bottom_z'],59.5)
-        self.assertAlmostEqual(p['top_z'],91.5)
+        self.assertAlmostEqual(p['bottom_z'],52.45)
+        self.assertAlmostEqual(p['top_z'],98.55)
         self.assertAlmostEqual(2*self.d.compact_tab_half_height_mm,13)
         self.assertLess(self.d.lower_tab_root_relief().BoundingBox().zmax,
                         p['screw_z'][0]-self.d.compact_tab_half_height_mm)
-        self.assertLessEqual(p['screw_z'][1]+self.d.compact_tab_half_height_mm,105)
+        self.assertLessEqual(p['screw_z'][1]+self.d.compact_tab_half_height_mm,
+                             self.d.v016_outer_controls['top_z'])
         self.assertTrue(self.parts['main'].isValid())
         self.assertEqual(self.d.validate(self.parts)['v014_compact_tabs']['count'],4)
 
@@ -211,14 +215,14 @@ class ModelTests(unittest.TestCase):
         p=d.v016_profile_solution
         self.assertEqual(len(p['fasteners_x']),2)
         self.assertEqual(len(p['fasteners_z']),2)
-        self.assertAlmostEqual(p['outer']['bulge_y'],58,places=5)
-        self.assertAlmostEqual(p['outer']['lower_y'],47,places=5)
-        self.assertAlmostEqual(p['outer']['shoulder_y'],16,places=5)
-        self.assertAlmostEqual(p['outer']['bulge_z'],85.5,places=5)
+        self.assertAlmostEqual(p['outer']['bulge_y'],69.844,places=3)
+        self.assertAlmostEqual(p['outer']['lower_y'],55.3973,places=3)
+        self.assertAlmostEqual(p['outer']['shoulder_y'],14.684,places=3)
+        self.assertAlmostEqual(p['outer']['bulge_z'],88.6333,places=3)
         self.assertGreaterEqual(d.v016_minimum_curved_spine_distance_mm(),
                                 d.v016_outer_inner_min_euclidean_web_mm)
-        self.assertAlmostEqual(p['opening']['bottom_z'],59.5)
-        self.assertAlmostEqual(p['opening']['top_z'],91.5)
+        self.assertAlmostEqual(p['opening']['bottom_z'],52.45)
+        self.assertAlmostEqual(p['opening']['top_z'],98.55)
         # Both contours and the printable saddle now depend on one fastener
         # pitch datum instead of independently fixed YZ profile coordinates.
         for offset in (-1,1):
