@@ -153,10 +153,10 @@ class ModelTests(unittest.TestCase):
 
     def test_v015_slimmer_arm_opening_without_removing_screw_web(self):
         p=self.d.adaptive_profile
-        self.assertAlmostEqual(p['bottom_z'],52.45)
-        self.assertAlmostEqual(p['top_z'],98.55)
-        self.assertAlmostEqual(p['rear_bottom_y'],53.8366,places=3)
-        self.assertAlmostEqual(p['rear_top_y'],37.1248,places=3)
+        self.assertAlmostEqual(p['bottom_z'],53.45)
+        self.assertAlmostEqual(p['top_z'],97.55)
+        self.assertAlmostEqual(p['rear_bottom_y'],54.0344,places=3)
+        self.assertAlmostEqual(p['rear_top_y'],40.4291,places=3)
         self.assertGreaterEqual(p['top_slope_rear_web_y'],self.d.v014_min_sloped_spine_web_mm)
         self.assertGreaterEqual(p['lower_slope_rear_web_y'],self.d.v014_min_sloped_spine_web_mm)
         for z,aperture in zip(p['screw_z'],(p['bottom_z'],p['top_z'])):
@@ -192,7 +192,7 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(changed.mounting_x_centers_mm,(-45,45))
         self.assertEqual(changed.effective_arm_pitch_mm,90)
         self.assertEqual(changed.effective_saddle_length_mm,120)
-        self.assertAlmostEqual(changed.compact_tab_half_height_mm,6.5)
+        self.assertAlmostEqual(changed.compact_tab_half_height_mm,7.5)
         self.assertEqual(changed.rib_profile_stations()[5][1],
                          changed.adaptive_profile['screw_z'][1]+changed.compact_tab_half_height_mm)
         self.assertEqual(changed.adaptive_profile['bottom_z'],
@@ -200,15 +200,60 @@ class ModelTests(unittest.TestCase):
 
     def test_v015_four_compact_ears_and_screw_rear_paths(self):
         p=self.d.adaptive_profile
-        self.assertAlmostEqual(p['bottom_z'],52.45)
-        self.assertAlmostEqual(p['top_z'],98.55)
-        self.assertAlmostEqual(2*self.d.compact_tab_half_height_mm,13)
+        self.assertAlmostEqual(p['bottom_z'],53.45)
+        self.assertAlmostEqual(p['top_z'],97.55)
+        self.assertAlmostEqual(2*self.d.compact_tab_half_height_mm,15)
         self.assertLess(self.d.lower_tab_root_relief().BoundingBox().zmax,
                         p['screw_z'][0]-self.d.compact_tab_half_height_mm)
         self.assertLessEqual(p['screw_z'][1]+self.d.compact_tab_half_height_mm,
                              self.d.v016_outer_controls['top_z'])
         self.assertTrue(self.parts['main'].isValid())
         self.assertEqual(self.d.validate(self.parts)['v014_compact_tabs']['count'],4)
+
+    def test_mounting_face_parameters_keep_holes_centered_when_dimensions_change(self):
+        """The screw axes follow the same tab and face datums used by the BREP."""
+        base=self.d
+        for side in (-1,1):
+            tabs=base.mounting_tab_profiles_for_arm(side)
+            arm=base.arm(side)
+            expected_x=side*base.mount_hole_center_spacing_mm/2
+            expected_z=sorted(base.path_point(st)[1] for st in base.mounting_stations_s_mm)
+            for tab in tabs:
+                self.assertAlmostEqual(tab['x_center_mm'],expected_x)
+                self.assertAlmostEqual(tab['mounting_face_y_mm'],base.mounting_face_y_mm)
+                self.assertAlmostEqual(tab['z_center_mm'],expected_z[tabs.index(tab)])
+                self.assertAlmostEqual(tab['height_mm'],base.board_mount_tab_height_mm)
+                self.assertAlmostEqual(tab['z_min_mm']+tab['height_mm']/2,tab['z_center_mm'])
+                self.assertAlmostEqual(tab['z_max_mm']-tab['height_mm']/2,tab['z_center_mm'])
+            axial=[f for f in arm.Faces() if f.geomType()=='CYLINDER']
+            screw_surfaces=[f for f in axial if abs(f._geomAdaptor().Cylinder().Radius()-base.board_screw_clearance_d_mm/2)<1e-5]
+            self.assertTrue(screw_surfaces)
+            for tab in tabs:
+                self.assertTrue(any(abs(f._geomAdaptor().Cylinder().Axis().Direction().Y())>0.999 and
+                                    abs(f._geomAdaptor().Cylinder().Axis().Location().X()-tab['x_center_mm'])<1e-4 and
+                                    abs(f._geomAdaptor().Cylinder().Axis().Location().Z()-tab['z_center_mm'])<1e-4
+                                    for f in screw_surfaces))
+            self.assertTrue(arm.isValid())
+            self.assertEqual(len(arm.Solids()),1)
+
+        changed=dict(self.cfg)
+        changed.update({
+            'mount_hole_center_spacing_mm':108,
+            'board_screw_vertical_pitch_mm':53,
+            'board_mount_tab_height_mm':16,
+            'board_mount_face_offset_y_mm':3,
+            'board_mount_face_depth_mm':7,
+            'arm_thickness_mm':18,
+        })
+        d=Design(changed)
+        d.validate_mount_dimensions()
+        for side in (-1,1):
+            tabs=d.mounting_tab_profiles_for_arm(side)
+            self.assertEqual([t['height_mm'] for t in tabs],[16,16])
+            self.assertEqual([t['width_mm'] for t in tabs],[18,18])
+            self.assertEqual([t['mounting_face_y_mm'] for t in tabs],[3,3])
+            self.assertEqual([round(t['x_center_mm'],6) for t in tabs],[side*54,side*54])
+            self.assertTrue(d.arm(side).isValid())
 
     def test_v016_shared_profile_solution_moves_with_fastener_datums(self):
         d=self.d
@@ -221,8 +266,8 @@ class ModelTests(unittest.TestCase):
         self.assertAlmostEqual(p['outer']['bulge_z'],88.6333,places=3)
         self.assertGreaterEqual(d.v016_minimum_curved_spine_distance_mm(),
                                 d.v016_outer_inner_min_euclidean_web_mm)
-        self.assertAlmostEqual(p['opening']['bottom_z'],52.45)
-        self.assertAlmostEqual(p['opening']['top_z'],98.55)
+        self.assertAlmostEqual(p['opening']['bottom_z'],53.45)
+        self.assertAlmostEqual(p['opening']['top_z'],97.55)
         # Both contours and the printable saddle now depend on one fastener
         # pitch datum instead of independently fixed YZ profile coordinates.
         for offset in (-1,1):

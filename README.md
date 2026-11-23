@@ -10,6 +10,8 @@ The existing G1-tangent Bézier opening is retained and now uses the same derive
 
 The generator exposes one shared local tab definition and translates it to each screw center on both arms. The actual front bearing pads now consume those same records as the YZ opening lips, so changing horizontal or vertical screw pitch relocates the screw features and tabs together without stretching either tab. The lower-root relief and rear gusset remain separate structural geometry. The build validates connected solids after pitch changes and restores the nominal configuration before exporting. The FreeCAD review document remains a separate native dependency graph and is not represented as validated by this generator.
 
+The saved native `display-mount.FCStd` is now synchronized through its `MountingParams` spreadsheet: XZ pitch, tab width/height, pad depth and datum offset drive the screw datum rectangles, YZ inner tab edges, pad and binder placement. The native and generated models remain separate implementations.
+
 ![V017 generated parametric frame](previews/main_frame_only.png)
 
 ![V017 generated engineering side profile](previews/engineering_side_profile.png)

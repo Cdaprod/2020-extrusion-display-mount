@@ -59,6 +59,20 @@ class Design:
         raise AttributeError(key)
 
     @property
+    def arm_top_land_mm(self):
+        """Compatibility name for the shared front mounting-face offset."""
+        return self.board_mount_face_offset_y_mm
+
+    @property
+    def mount_pad_axial_thickness_mm(self):
+        """Compatibility name for the shared bearing / mounting-face depth."""
+        return self.board_mount_face_depth_mm
+
+    @property
+    def mounting_face_y_mm(self):
+        return self.arm_front_y_mm + self.board_mount_face_offset_y_mm
+
+    @property
     def mounting_x_centers_mm(self):
         """Symmetric X stations. Mount rails move independently of support arms."""
         h=self.mount_hole_center_spacing_mm/2
@@ -85,9 +99,8 @@ class Design:
 
     @property
     def compact_tab_half_height_mm(self):
-        """Small independently retained M3 ears; no continuous carrier between them."""
-        diameter=max(self.board_screw_head_access_d_mm,self.board_driver_access_d_mm)
-        return diameter/2+self.v014_min_tab_wall_mm+self.v014_tab_edge_allowance_mm
+        """Half-height of the shared, explicitly dimensioned screw-face tab."""
+        return self.board_mount_tab_height_mm/2
 
     def mounting_tab_profiles_for_arm(self, side):
         """Return the shared, screw-centered tab records consumed by the BREP.
@@ -106,6 +119,7 @@ class Design:
         profiles=tuple(sorted(profiles,key=lambda p:p['z_center_mm']))
         signature=('width_mm','height_mm','bearing_depth_mm',
                    'front_projection_mm','corner_radius_mm',
+                   'mounting_face_y_mm',
                    'bearing_diameter_mm','screw_clearance_diameter_mm',
                    'head_access_diameter_mm','counterbore_depth_mm',
                    'driver_access_diameter_mm','radial_bearing_wall_mm')
@@ -145,6 +159,7 @@ class Design:
             'height_mm':2*self.compact_tab_half_height_mm,
             'width_mm':self.arm_thickness_mm,
             'bearing_depth_mm':self.mount_pad_axial_thickness_mm,
+            'mounting_face_y_mm':self.mounting_face_y_mm,
             'front_projection_mm':self.display_standoff_height_mm,
             'corner_radius_mm':self.board_mount_tab_corner_radius_mm,
             'bearing_diameter_mm':self.display_standoff_diameter_mm,
@@ -301,6 +316,16 @@ class Design:
             raise ValueError('V010 front draft must reach the rear structural web')
         if self.compact_tab_half_height_mm < self.board_driver_access_d_mm/2+self.v014_min_tab_wall_mm:
             raise ValueError('V014 upper ear too close to rear screwdriver corridor')
+        minimum_tab_half_height=(max(self.board_screw_head_access_d_mm,
+                                     self.board_driver_access_d_mm)/2+
+                                 self.v014_min_tab_wall_mm+
+                                 self.v014_tab_edge_allowance_mm)
+        if self.compact_tab_half_height_mm < minimum_tab_half_height:
+            raise ValueError('Mounting tab height does not retain required radial wall and edge clearance')
+        minimum_tab_width=(self.board_driver_access_d_mm/2+
+                           self.min_screw_head_radial_wall_mm)*2
+        if self.arm_thickness_mm < minimum_tab_width:
+            raise ValueError('Mounting-face width does not retain required screw edge clearance')
         if self.v014_min_tab_wall_mm<=0 or self.v014_tab_edge_allowance_mm<0:
             raise ValueError('M3 compact-ear bearing wall and edge allowance must be nonnegative')
         if self.v014_lower_ear_root_relief_mm<=0:
@@ -963,6 +988,9 @@ class Design:
                 raise ValueError(f'{label} port/cable provisional service volume obstructed: {overlap}')
         report['mount_hole_center_spacing_mm']=self.mount_hole_center_spacing_mm
         report['support_arm_center_spacing_mm']=self.effective_arm_pitch_mm
+        report['mounting_face_y_mm']=self.mounting_face_y_mm
+        report['mounting_face_depth_mm']=self.mount_pad_axial_thickness_mm
+        report['mounting_tab_height_mm']=2*self.compact_tab_half_height_mm
         report['effective_saddle_length_mm']=self.effective_saddle_length_mm
         report['v016_constraint_solution']={
             'screw_x_centers_mm':list(self.mounting_x_centers_mm),
