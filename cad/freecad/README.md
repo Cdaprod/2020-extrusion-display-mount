@@ -19,3 +19,7 @@ At 53, 59.1 and 65 mm vertical pitch the native fused mount and separate keeper 
 The Python generator retains a different curved arm profile and coordinate system. Its lower root-relief and front-neck blend previously rejected 65 mm pitch. The generator now shortens those transitions as the lower screw descends and locates its cross member at the upper rear web. Its full validation passed at 53, 59.1 and 65 mm; its round bosses, 16 mm arms and curved opening remain different from the native 10 mm arms and angular opening. STEP and STL files marked `working` are CAD review exports; the keeper remains a separate part.
 
 ![Connected working mount](mount-working-isometric.png)
+
+## Centered bracket channel
+
+The native YZ sketch uses `BracketChannelWidth = 20.15 mm`, centered on `RailCenterY = 10 mm`. The 5.8 mm slot key is centered on that datum, leaving 7.175 mm on each side of the bracket channel. The saddle's separate channel remains 20.70 mm wide and centered on the same datum, giving 7.45 mm on each side of the key. Coincidence plus horizontal and vertical constraints replace duplicate ordinate dimensions. The main `MountPrintable` fusion remains one solid; `RemovableKeeper` remains a separate body and export. Native recomputes at 53, 59.1 and 65 mm pitch remained valid, and the reference rail and keeper had zero overlap at nominal pitch.
