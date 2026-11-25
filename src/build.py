@@ -1380,6 +1380,13 @@ def build(config_path=DEFAULT_CONFIG,out=ROOT,rail_path=DEFAULT_RAIL,with_previe
     export_step(printable,out/'step'/'PRINTABLE_PARTS_V017.step')
     report['rail_reference_sha256']=hashlib.sha256(Path(rail_path).read_bytes()).hexdigest()
     report['design_config']=cfg
+    # The native FreeCAD manufacturing path is independently validated. A
+    # historical CadQuery rebuild must retain its current source/export receipt.
+    receipt_path = out/'docs'/'validation.json'
+    if receipt_path.exists():
+        previous = json.loads(receipt_path.read_text())
+        if 'native_manufacturing' in previous:
+            report['native_manufacturing'] = previous['native_manufacturing']
     (out/'docs'/'validation.json').write_text(json.dumps(report,indent=2)+'\n')
     previews=render_views(parts,out/'previews') if with_previews else []
     if with_previews:

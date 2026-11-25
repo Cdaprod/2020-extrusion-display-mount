@@ -1,5 +1,16 @@
 # 2020 Extrusion Display Mount
 
+## Current native manufacturing project — 2026-11-25
+
+The current native source is [`cad/freecad/display-mount-working.FCStd`](cad/freecad/display-mount-working.FCStd), synchronized from the user's working FreeCAD document. Its disassembled V2 truss brackets each have two Ø5.8 mm × 1.5 mm standoff locator recesses and Ø4 mm rear driver passages. The 3→4 mm driver change leaves the screw-bearing regions, saddle, keeper and crossbar unchanged.
+
+[`manufacturing.yaml`](manufacturing.yaml) binds this source to [`projects/display-mount.3mf`](projects/display-mount.3mf) for [Observatory Print Bay](https://github.com/Cdaprod/elegoo-neptune-2-3d-printer/pull/28). Both plate layouts, locks, transforms and effective settings are preserved; only the two Brackets meshes changed. Fresh Brackets G-code has been sliced and staged separately, without upload or printing.
+
+Current component exports are the five `cad/freecad/modular-*.stl`/`.step` pairs. BREP validation, dimensions and checksums are in `docs/validation.json.native_manufacturing`. MountingParams and native feature expressions control this manufacturing path. The historical CadQuery constructions and earlier reference exports documented below remain separate; this update does not redesign them or claim a new physical fit/load test.
+
+![Current disassembled brackets in preserved print orientation](previews/native_manufacturing_brackets.png)
+
+
 ## M3 fasteners (current native-equivalent model)
 
 Display tabs have a 3 mm axial bearing pad, Ø3 mm through hole and Ø5 mm, 90° countersunk seat accessed from the rear. The removable keeper has Ø3.4 mm screw clearances and Ø6 × 3 mm deep head counterbores on its underside; four Ø2.5 mm × 7 mm pilot pockets in the saddle accept M3 screws threaded directly into printed plastic. The keeper remains separate. The 2.5 mm pilot and 6 × 3 mm head recess are provisional: check them against the actual screw heads, print process and material with a test print; engagement length and clamping force have not been established. The hardware changes apply to the FreeCAD/native-equivalent model; the retained legacy curved generator and its M4 reference assets are separate.

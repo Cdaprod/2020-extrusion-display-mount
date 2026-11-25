@@ -559,5 +559,162 @@
       "display_head_diameter_mm": 5.0,
       "display_bearing_thickness_mm": 3.0
     }
+  },
+  "native_manufacturing": {
+    "date": "2026-11-25",
+    "source": "cad/freecad/display-mount-working.FCStd",
+    "source_sha256": "a61c0e9bb7871078c60e18e7f816d4a44b94b62c7e4865b2ddd3d41416ac3251",
+    "slicer_project": "projects/display-mount.3mf",
+    "plate": "Brackets",
+    "parameters": {
+      "MountingParams.DriverAccessDiameter": 4
+    },
+    "standoff_locator_diameter_mm": 5.8,
+    "standoff_locator_depth_mm": 1.5,
+    "locators_per_bracket": 2,
+    "geometry": {
+      "bracket-left": {
+        "valid": true,
+        "solids": 1,
+        "volume": 36889.30040388899,
+        "bounds": [
+          -61.950000000000024,
+          -6.422974999918957,
+          -63.4289,
+          -51.94999999999998,
+          68.00000000000003,
+          48.1749975069252
+        ]
+      },
+      "bracket-right": {
+        "valid": true,
+        "solids": 1,
+        "volume": 36889.26945079862,
+        "bounds": [
+          51.95,
+          -6.422974999918988,
+          -63.4289,
+          61.95000000000001,
+          68.00000000000001,
+          48.174997506925216
+        ]
+      },
+      "saddle": {
+        "valid": true,
+        "solids": 1,
+        "volume": 99040.75233834873,
+        "bounds": [
+          -68.94999999999993,
+          -12.999999999999993,
+          -88.27890000007478,
+          68.95000000000014,
+          56.17755609759384,
+          -61.928899999999956
+        ]
+      },
+      "keeper": {
+        "valid": true,
+        "solids": 1,
+        "volume": 33493.45956018582,
+        "bounds": [
+          -68.95,
+          -11.0,
+          -94.7289,
+          68.95,
+          31.0,
+          -88.7289
+        ]
+      },
+      "crossbar": {
+        "valid": true,
+        "solids": 1,
+        "volume": 8473.46018366039,
+        "bounds": [
+          -53.45,
+          60.00000000000003,
+          -5.00000000000014,
+          53.45,
+          68.00000000000013,
+          4.999999999999906
+        ]
+      },
+      "_engine": [
+        "1",
+        "1",
+        "1",
+        "20260414 (Git shallow)",
+        "Unknown",
+        "2026/04/14 22:09:59",
+        "(HEAD detached at 0108fd4b4)",
+        "0108fd4b4850cc46e625b60e53cea7a7bbe69f8d"
+      ]
+    },
+    "diameter_comparison": {
+      "LeftBracketTrussV2": {
+        "removed_volume": 390.202494586717,
+        "added_volume": 0.0,
+        "valid3": true,
+        "valid4": true,
+        "removed_bounds": [
+          -58.95,
+          26.08341895101506,
+          -31.675000000000015,
+          -54.95,
+          68.00000000000021,
+          31.674999999999994
+        ],
+        "bearing_region_symmetric_difference_mm3": 0.0
+      },
+      "RightBracketTrussV2": {
+        "removed_volume": 390.20249459145333,
+        "added_volume": 0.0,
+        "valid3": true,
+        "valid4": true,
+        "removed_bounds": [
+          54.95,
+          26.083418951015027,
+          -31.675000000000015,
+          58.95,
+          68.00000000000033,
+          31.674999999999994
+        ],
+        "bearing_region_symmetric_difference_mm3": 0.0
+      },
+      "SaddleModular": {
+        "removed_volume": 0.0,
+        "added_volume": 0.0,
+        "valid3": true,
+        "valid4": true
+      },
+      "RemovableKeeper": {
+        "removed_volume": 0.0,
+        "added_volume": 0.0,
+        "valid3": true,
+        "valid4": true
+      },
+      "RightCrossbarDrilling": {
+        "removed_volume": 0.0,
+        "added_volume": 0.0,
+        "valid3": true,
+        "valid4": true
+      }
+    },
+    "unaffected_stl_hashes_identical": true,
+    "preserved_3mf_entries": 23,
+    "replaced_3mf_meshes": 2,
+    "physical_print_started": false,
+    "sd_modified": false,
+    "exports": {
+      "cad/freecad/modular-left-bracket.step": "89be468ff4b5057f418eeedbce59059686c845c88b4774a9a7f6ebe95aa769a3",
+      "cad/freecad/modular-left-bracket.stl": "9c1dde97e27d648a191f93ef207be9520a2b1808287b561de6d8f59dd1e4d2a8",
+      "cad/freecad/modular-right-bracket.step": "8d286930d94132ac6ac6268deba70c17d2548101d1cffe2b0639af4f2d9111bd",
+      "cad/freecad/modular-right-bracket.stl": "f66fdfc05fdfabfc2ec0ea72ca42f23a69b0a5ea9bcd9156ec35221929045173",
+      "cad/freecad/modular-saddle.step": "546a2a3c413532c14cacdd68319885d8142f637f7cb41d6986d27567f968d9cf",
+      "cad/freecad/modular-saddle.stl": "7ba1ae216241e464bbb1a256b7fb868a1cac600ad036da30bf57b870fd8ec3d2",
+      "cad/freecad/modular-keeper.step": "5e967a5909874ff7b642c81c543cded44748b397da7667b039481eb4dec91c5e",
+      "cad/freecad/modular-keeper.stl": "431789317127320eae72a090e9edde835ba5c2d00fc7a0622d7321c4ea64b353",
+      "cad/freecad/modular-crossbar.step": "a87fa086675310f07d7a1abb212de09e20abad0aa4761248e383ba1c76cbc530",
+      "cad/freecad/modular-crossbar.stl": "8cf18b21767209c77a41bb1a1fa65b294bd8b5b781d7d568f7c81efb8afcf9f9"
+    }
   }
 }
