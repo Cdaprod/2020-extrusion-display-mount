@@ -1,3 +1,9 @@
+# Current native manufacturing source
+
+The working FCStd now follows the latest user workspace, including standoff locators, Ø4 rear driver passages and separate V2 truss brackets. Use the root `manufacturing.yaml` and `projects/display-mount.3mf`. Updated modular STL/STEP exports (including `modular-keeper`) are beside this file; the root README embeds their geometry-derived preview. `docs/validation.json.native_manufacturing` records validation and checksums. Git history preserves the earlier native revision.
+
+The following notes document earlier checkpoints. Their dimensions and fused/CadQuery review exports are historical and do not override the current manifest's native source and named parts.
+
 # Preserved FreeCAD source
 
 **Current:** `display-mount-working.FCStd` and `../../previews/native_equivalent_side.png`. `original-side.png` is an archived earlier state and should not be used to judge the current key alignment. The working model retains the current 15 mm rear-access pocket. The horizontal sketch placement now follows the screw pitch through a spreadsheet expression.

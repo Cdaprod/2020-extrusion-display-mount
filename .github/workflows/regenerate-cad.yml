@@ -10,6 +10,15 @@ on:
       - 'config/**'
       - 'tests/**'
       - '.github/workflows/regenerate-cad.yml'
+  pull_request:
+    paths:
+      - 'cad/**'
+      - 'projects/**'
+      - 'manufacturing.yaml'
+      - 'requirements.txt'
+      - 'tests/**'
+      - 'docs/validation.json'
+      - '.github/workflows/regenerate-cad.yml'
   workflow_dispatch:
 
 concurrency:
@@ -21,6 +30,7 @@ permissions:
 
 jobs:
   build-and-publish:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,3 +65,23 @@ jobs:
             fi
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
+
+  validate-manufacturing:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install geometry validation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1 libxrender1
+          python -m pip install -r requirements.txt matplotlib
+      - name: Rebuild historical generator independently of native exports
+        run: xvfb-run -a python src/build.py --out /tmp/neptune-cad-validation
+      - name: Validate native manufacturing inputs, BREP exports and existing engineering tests
+        run: python -m unittest discover -s tests -v
